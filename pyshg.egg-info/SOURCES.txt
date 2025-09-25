@@ -1,0 +1,11 @@
+LICENSE
+README.md
+setup.py
+pyshg.egg-info/PKG-INFO
+pyshg.egg-info/SOURCES.txt
+pyshg.egg-info/dependency_links.txt
+pyshg.egg-info/not-zip-safe
+pyshg.egg-info/requires.txt
+pyshg.egg-info/top_level.txt
+python/shg_python.cpp
+src/SHG.cpp

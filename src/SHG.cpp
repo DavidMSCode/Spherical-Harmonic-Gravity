@@ -55,6 +55,9 @@
 
 namespace SHG
 {
+    // Global flag to control verbosity of coefficient loading messages
+    static bool g_verbose_coefficient_loading = false;
+
     // Reads a block of coefficients from (0,0) to (l,m) from the binary file
     // Returns true if successful, false otherwise
     bool read_coefficients_block_binary(const std::string &filename, int l, int m, std::vector<std::vector<double>> &C_block, std::vector<std::vector<double>> &S_block)
@@ -169,6 +172,15 @@ namespace SHG
     // P(l,m) = sqrt((2l+1)/(l-m)(l+m))*[sqrt(2l-1)*sin(phi)*P(l-1,m) - sqrt((l-1+m)(l-1-m)/(2l-3))*P(l-2,m)]
     std::vector<std::vector<double>> Plm_bar(int l_max, int m_max, double phi)
     {
+        // Warning about numerical stability for high orders
+        static bool high_order_warning_shown = false;
+        if ((m_max > 1900 || l_max > 1900) && !high_order_warning_shown) {
+            std::cerr << "WARNING: Computing normalized Associated Legendre Functions (ALFs) with degree/order > 1900." << std::endl;
+            std::cerr << "         Results may be numerically unstable. Consider limiting computations to" << std::endl;
+            std::cerr << "         degree/order ≤ 1900 for reliable results." << std::endl;
+            high_order_warning_shown = true;
+        }
+        
         // theta = colatitude
         const double theta = M_PI_2 - phi;
         const double u = std::sin(theta);
@@ -301,7 +313,7 @@ namespace SHG
     }
 
     // Computes the gravitational potential at (r, phi, lambda) using spherical harmonics
-    double compute_gravitational_potential(double r, double phi, double lambda, int l_max, int m_max,
+    double pot(double r, double phi, double lambda, int l_max, int m_max,
                                            const std::vector<std::vector<double>> &C,
                                            const std::vector<std::vector<double>> &S,
                                            double a, double GM)
@@ -342,5 +354,174 @@ namespace SHG
             lambda -= 2 * M_PI; // Normalize to [0, 2π]
         }
         return {r, phi_gc, lambda};
+    }
+
+    // EGM2008-specific functions
+    bool load_EGM2008_coefficients(const std::string& coefficient_path, std::vector<std::vector<double>>& C, std::vector<std::vector<double>>& S)
+    {
+        static bool error_message_shown = false;  // Track if error message has been shown
+        static std::string last_error_path = "";  // Track path for which error was shown
+        
+        // Use constants from header
+        
+        std::string bin_file, txt_file;
+        
+        if (coefficient_path.empty()) {
+            // Use default file names
+            bin_file = "EGM2008Coeffs.bin";
+            txt_file = "EGM2008_to2190_TideFree.txt";
+        } else {
+            // Check if provided path is .bin or .txt
+            if (coefficient_path.substr(coefficient_path.length() - 4) == ".bin") {
+                bin_file = coefficient_path;
+                // Generate corresponding txt file name
+                txt_file = coefficient_path.substr(0, coefficient_path.length() - 4) + ".txt";
+            } else if (coefficient_path.substr(coefficient_path.length() - 4) == ".txt") {
+                txt_file = coefficient_path;
+                // Generate corresponding bin file name
+                bin_file = coefficient_path.substr(0, coefficient_path.length() - 4) + ".bin";
+            } else {
+                // Assume it's a base name, try both extensions
+                bin_file = coefficient_path + ".bin";
+                txt_file = coefficient_path + ".txt";
+            }
+        }
+        
+        // First, try to load from binary file
+        if (read_coefficients_block_binary(bin_file, EGM2008_MAX_DEGREE, EGM2008_MAX_ORDER, C, S)) {
+            // Only print success message once per session and if verbose mode is enabled
+            static bool success_message_shown = false;
+            if (!success_message_shown && g_verbose_coefficient_loading) {
+                std::cout << "Successfully loaded EGM2008 coefficients from binary file: " << bin_file << std::endl;
+                success_message_shown = true;
+            }
+            return true;
+        }
+        
+        // Binary failed, try text file
+        // Only show these messages once per path and if verbose mode is enabled
+        std::string current_path_key = bin_file + "|" + txt_file;
+        static std::string last_attempt_path = "";
+        if (current_path_key != last_attempt_path && g_verbose_coefficient_loading) {
+            std::cout << "Binary file '" << bin_file << "' not found or failed to load." << std::endl;
+            std::cout << "Attempting to load from text file: " << txt_file << std::endl;
+            last_attempt_path = current_path_key;
+        }
+        
+        if (read_EGM2008_coefficients_text(txt_file, EGM2008_MAX_DEGREE, EGM2008_MAX_ORDER, C, S)) {
+            // Only show text loading success once per session and if verbose mode is enabled
+            static bool text_success_shown = false;
+            if (!text_success_shown && g_verbose_coefficient_loading) {
+                std::cout << "Successfully loaded EGM2008 coefficients from text file: " << txt_file << std::endl;
+                
+                // Try to create binary file for faster future loading
+                std::cout << "Creating binary file '" << bin_file << "' for faster future loading..." << std::endl;
+                if (write_coefficients_binary(bin_file, C, S, EGM2008_MAX_DEGREE, EGM2008_MAX_ORDER)) {
+                    std::cout << "Binary file created successfully: " << bin_file << std::endl;
+                } else {
+                    std::cout << "Warning: Failed to create binary file: " << bin_file << std::endl;
+                }
+                text_success_shown = true;
+            }
+            return true;
+        }
+        
+        // Both failed - only show error message once per path combination
+        std::string current_error_key = bin_file + "|" + txt_file;
+        if (!error_message_shown || last_error_path != current_error_key) {
+            std::cerr << "ERROR: Failed to load EGM2008 coefficients from both binary and text files." << std::endl;
+            std::cerr << "Please ensure you have the EGM2008 coefficient files available." << std::endl;
+            std::cerr << std::endl;
+            std::cerr << "You can download EGM2008 coefficients from:" << std::endl;
+            std::cerr << "  https://earth-info.nga.mil/php/download.php?file=egm-08spherical" << std::endl;
+            std::cerr << "  https://earth-info.nga.mil" << std::endl;
+            std::cerr << std::endl;
+            std::cerr << "Expected files:" << std::endl;
+            std::cerr << "  - Binary format: " << bin_file << std::endl;
+            std::cerr << "  - Text format: " << txt_file << " (EGM2008_to2190_TideFree.txt)" << std::endl;
+            
+            error_message_shown = true;
+            last_error_path = current_error_key;
+        }
+        
+        return false;
+    }
+
+    std::array<double, 3> g_EGM2008(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path)
+    {
+        static std::vector<std::vector<double>> C_cache, S_cache;
+        static bool coefficients_loaded = false;
+        static std::string last_path = "";
+        
+        // Validate max_degree
+        if (max_degree > EGM2008_MAX_DEGREE) {
+            static bool degree_warning_shown = false;
+            if (!degree_warning_shown) {
+                std::cerr << "WARNING: Requested degree " << max_degree << " exceeds EGM2008 maximum " 
+                          << EGM2008_MAX_DEGREE << ". Using maximum available." << std::endl;
+                degree_warning_shown = true;
+            }
+            max_degree = EGM2008_MAX_DEGREE;
+        }
+        
+        // Load coefficients if not already loaded or if path changed
+        if (!coefficients_loaded || coefficient_path != last_path) {
+            if (!load_EGM2008_coefficients(coefficient_path, C_cache, S_cache)) {
+                // Only show this error once per session for g_EGM2008
+                static bool g_error_shown = false;
+                if (!g_error_shown) {
+                    std::cerr << "ERROR: Cannot compute g_EGM2008 without coefficients." << std::endl;
+                    g_error_shown = true;
+                }
+                return {0.0, 0.0, 0.0};
+            }
+            coefficients_loaded = true;
+            last_path = coefficient_path;
+        }
+        
+        // Compute gravitational acceleration using EGM2008 model with user-specified degree
+        return g<std::array<double, 3>>(r, phi, lambda, max_degree, max_degree, 
+                                       C_cache, S_cache, EGM2008_A, EGM2008_GM);
+    }
+
+    double U_EGM2008(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path)
+    {
+        static std::vector<std::vector<double>> C_cache, S_cache;
+        static bool coefficients_loaded = false;
+        static std::string last_path = "";
+        
+        // Validate max_degree
+        if (max_degree > EGM2008_MAX_DEGREE) {
+            static bool degree_warning_shown = false;
+            if (!degree_warning_shown) {
+                std::cerr << "WARNING: Requested degree " << max_degree << " exceeds EGM2008 maximum " 
+                          << EGM2008_MAX_DEGREE << ". Using maximum available." << std::endl;
+                degree_warning_shown = true;
+            }
+            max_degree = EGM2008_MAX_DEGREE;
+        }
+        
+        // Load coefficients if not already loaded or if path changed
+        if (!coefficients_loaded || coefficient_path != last_path) {
+            if (!load_EGM2008_coefficients(coefficient_path, C_cache, S_cache)) {
+                // Only show this error once per session for U_EGM2008
+                static bool u_error_shown = false;
+                if (!u_error_shown) {
+                    std::cerr << "ERROR: Cannot compute U_EGM2008 without coefficients." << std::endl;
+                    u_error_shown = true;
+                }
+                return 0.0;
+            }
+            coefficients_loaded = true;
+            last_path = coefficient_path;
+        }
+        
+        // Compute gravitational potential using EGM2008 model with user-specified degree
+        return pot(r, phi, lambda, max_degree, max_degree, 
+                  C_cache, S_cache, EGM2008_A, EGM2008_GM);
+    }
+
+    void set_coefficient_loading_verbose(bool verbose) {
+        g_verbose_coefficient_loading = verbose;
     }
 }

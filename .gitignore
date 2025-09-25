@@ -54,9 +54,7 @@ ehthumbs.db
 Thumbs.db
 
 # EGM2008 coefficient files (do not redistribute)
-EGM2008*
 EGM2008_to2190_TideFree
-src/EGM2008*
 src/EGM2008_to2190_TideFree
 *.egm
 *.cof
@@ -81,3 +79,6 @@ __pycache__/
 *.gch
 *.pch
 
+#external libraries
+extern/
+src/compare_libraries.cpp

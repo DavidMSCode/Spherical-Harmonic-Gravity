@@ -1,0 +1,47 @@
+Metadata-Version: 2.4
+Name: pyshg
+Version: 1.0.0
+Summary: Python bindings for Spherical Harmonic Gravity (SHG) library
+Home-page: https://github.com/DavidMSCode/Spherical-Harmonic-Gravity
+Author: DavidMSCode
+Author-email: 
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: C++
+Classifier: Topic :: Scientific/Engineering :: Physics
+Classifier: Topic :: Scientific/Engineering :: Astronomy
+Requires-Python: >=3.6
+License-File: LICENSE
+Requires-Dist: numpy>=1.15.0
+Requires-Dist: pybind11>=2.5.0
+Provides-Extra: test
+Requires-Dist: pytest; extra == "test"
+Dynamic: author
+Dynamic: classifier
+Dynamic: description
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+
+    Python bindings for a C++ library that computes gravitational potential and 
+    acceleration using normalized spherical harmonic coefficients. The library 
+    supports high-degree spherical harmonic gravity models such as EGM2008.
+    
+    Features:
+    - Compute gravitational acceleration and potential
+    - Support for both geocentric and Cartesian coordinates
+    - Efficient normalized Associated Legendre Function computation
+    - Binary and text coefficient file I/O
+    - Template-based design for flexibility
+    

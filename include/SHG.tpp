@@ -1,12 +1,15 @@
 // SHG.tpp - Template implementations for Spherical Harmonic Gravity
 // Part of the Spherical-Harmonic-Gravity (SHG) library
 
+#include <iostream>
+#include <cmath>
+
 namespace SHG {
 
 // Template for gravitational acceleration
 // T should be a type that can be initialized with {aI, aJ, aK}
 template <typename T>
-T compute_gravitational_acceleration(double r, double phi, double lambda, int l_max, int m_max, const std::vector<std::vector<double>> &C, const std::vector<std::vector<double>> &S, double a, double GM)
+T g(double r, double phi, double lambda, int l_max, int m_max, const std::vector<std::vector<double>> &C, const std::vector<std::vector<double>> &S, double a, double GM)
 {
     using namespace SHG;
     std::vector<std::vector<double>> P = Plm_bar(l_max, m_max, phi);
@@ -64,9 +67,35 @@ T compute_gravitational_acceleration(double r, double phi, double lambda, int l_
     double r2 = r * r;
     double ri_rj2 = ri * ri + rj * rj;
     double sqrt_ri_rj2 = sqrt(ri_rj2);
-    double aI = (1 / r * dudr - rk / (r2 * sqrt_ri_rj2) * dudphi) * ri - (1 / ri_rj2 * dudlambda) * rj;// - (GM / r3) * ri;
-    double aJ = (1 / r * dudr - rk / (r2 * sqrt_ri_rj2) * dudphi) * rj + (1 / ri_rj2 * dudlambda) * ri;// - (GM / r3) * rj;
-    double aK = (1 / r * dudr * rk + sqrt_ri_rj2 / r2 * dudphi);// - (GM / r3) * rk;
+    
+    // Handle coordinate singularity at poles (phi = ±90°)
+    // When cos(phi) ≈ 0, we need to handle the coordinate transformation carefully
+    const double pole_tolerance = 1e-10;
+    double cos_phi = cos(phi);
+    double aI, aJ, aK;
+    
+    if (abs(cos_phi) < pole_tolerance) {
+        // At the poles: use L'Hôpital's rule and limiting behavior
+        // The horizontal accelerations at poles are determined by the gradient in the tangent plane
+        // For spherical harmonics, this involves derivatives of Legendre polynomials
+        
+        // At poles, ri = rj ≈ 0, so horizontal accelerations come from dudlambda/cos(phi)
+        // Using L'Hôpital's rule: lim(phi→±π/2) dudlambda/cos(phi) = d(dudlambda)/dphi at pole
+        
+        // The proper limit gives us the horizontal components based on the azimuthal derivative
+        // For numerical stability, we compute this using the derivative relationship
+        double sign_phi = (phi > 0) ? 1.0 : -1.0;  // North or South pole
+        
+        // At poles, the azimuthal acceleration components are:
+        aI = -sign_phi * dudlambda / r * sin(lambda);
+        aJ = sign_phi * dudlambda / r * cos(lambda);
+        aK = dudr / r * rk + sign_phi * dudphi / r;
+    } else {
+        // Normal case: away from poles
+        aI = (1 / r * dudr - rk / (r2 * sqrt_ri_rj2) * dudphi) * ri - (1 / ri_rj2 * dudlambda) * rj;
+        aJ = (1 / r * dudr - rk / (r2 * sqrt_ri_rj2) * dudphi) * rj + (1 / ri_rj2 * dudlambda) * ri;
+        aK = (1 / r * dudr * rk + sqrt_ri_rj2 / r2 * dudphi);
+    }
     T result = {aI, aJ, aK};
     return result;
 }
@@ -74,7 +103,7 @@ T compute_gravitational_acceleration(double r, double phi, double lambda, int l_
 template <typename T>
 T gravitational_acceleration_from_cartesian(double x, double y, double z, int l_max, int m_max, const std::vector<std::vector<double>>& C, const std::vector<std::vector<double>>& S, double a, double GM) {
     auto [r, phi, lambda] = cartesian_to_geocentric(x, y, z);
-    return SHG::compute_gravitational_acceleration<T>(r, phi, lambda, l_max, m_max, C, S, a, GM);
+    return SHG::g<T>(r, phi, lambda, l_max, m_max, C, S, a, GM);
 }
 
 } // namespace SHG

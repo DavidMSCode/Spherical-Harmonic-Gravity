@@ -23,6 +23,24 @@
 #include <utility> // for std::pair
 
 namespace SHG {
+    
+    // Physical constants and reference parameters
+    
+    // WGS84 Constants
+    constexpr double WGS84_A = 6378137.0;           // WGS84 semi-major axis in meters
+    constexpr double WGS84_A_KM = 6378.137;         // WGS84 semi-major axis in kilometers
+    constexpr double WGS84_GM = 3.986004418e14;     // WGS84 gravitational parameter in m³/s²
+    constexpr double WGS84_GM_KM = 3.986004418e5;   // WGS84 gravitational parameter in km³/s²
+    constexpr double WGS84_F = 1.0 / 298.257223563; // WGS84 flattening
+    
+    // EGM2008 Constants (from README_WGS84_2.pdf)
+    constexpr double EGM2008_A = 6378136.3;         // EGM2008 semi-major axis in meters
+    constexpr double EGM2008_A_KM = 6378.1363;      // EGM2008 semi-major axis in kilometers
+    constexpr double EGM2008_GM = 3.986004415e14;   // EGM2008 gravitational parameter in m³/s²
+    constexpr double EGM2008_GM_KM = 3.986004415e5; // EGM2008 gravitational parameter in km³/s²
+    constexpr int EGM2008_MAX_DEGREE = 2190;        // EGM2008 maximum degree
+    constexpr int EGM2008_MAX_ORDER = 2190;         // EGM2008 maximum order
+    
     /**
      * @brief Reads a block (starting from 0,0) of spherical harmonic coefficients from a binary file.
      * @param filename The path to the binary file containing the coefficients.
@@ -108,14 +126,57 @@ namespace SHG {
     bool read_EGM2008_coefficients_text(const std::string &filename, int l_max, int m_max, std::vector<std::vector<double>> &C, std::vector<std::vector<double>> &S);
     
     template <typename T>
-    T compute_gravitational_acceleration(double r, double phi, double lambda, int l_max, int m_max, const std::vector<std::vector<double>> &C, const std::vector<std::vector<double>> &S, double a, double GM);
+    T g(double r, double phi, double lambda, int l_max, int m_max, const std::vector<std::vector<double>> &C, const std::vector<std::vector<double>> &S, double a, double GM);
 
-    double compute_gravitational_potential(double r, double phi, double lambda, int l_max, int m_max, const std::vector<std::vector<double>> &C, const std::vector<std::vector<double>> &S, double a, double GM);
+    double pot(double r, double phi, double lambda, int l_max, int m_max, const std::vector<std::vector<double>> &C, const std::vector<std::vector<double>> &S, double a, double GM);
 
     std::array<double, 3> cartesian_to_geocentric(double x, double y, double z);
 
     template <typename T>
     T gravitational_acceleration_from_cartesian(double x, double y, double z, int l_max, int m_max, const std::vector<std::vector<double>> &C, const std::vector<std::vector<double>> &S, double a, double GM);
+
+    // EGM2008-specific functions
+    /**
+     * @brief Computes gravitational acceleration using EGM2008 model with user-specified degree.
+     * Automatically loads coefficients from binary or text file with fallback.
+     * @param r Geocentric radius in meters.
+     * @param phi Geocentric latitude in radians.
+     * @param lambda Longitude in radians.
+     * @param max_degree Maximum degree (and order) to use. Must be <= 2190.
+     * @param coefficient_path Optional path to EGM2008 coefficient file (.bin or .txt). 
+     *                        If empty, searches for "EGM2008Coeffs.bin" then "EGM2008_to2190_TideFree.txt"
+     * @return Array of gravitational acceleration components [aI, aJ, aK] in m/s².
+     */
+    std::array<double, 3> g_EGM2008(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path = "");
+
+    /**
+     * @brief Computes gravitational potential using EGM2008 model with user-specified degree.
+     * Automatically loads coefficients from binary or text file with fallback.
+     * @param r Geocentric radius in meters.
+     * @param phi Geocentric latitude in radians.
+     * @param lambda Longitude in radians.
+     * @param max_degree Maximum degree (and order) to use. Must be <= 2190.
+     * @param coefficient_path Optional path to EGM2008 coefficient file (.bin or .txt).
+     *                        If empty, searches for "EGM2008Coeffs.bin" then "EGM2008_to2190_TideFree.txt"
+     * @return Gravitational potential in m²/s².
+     */
+    double U_EGM2008(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path = "");
+
+    /**
+     * @brief Loads EGM2008 coefficients with automatic fallback from binary to text format.
+     * If binary file doesn't exist, attempts to load from text file and create binary.
+     * @param coefficient_path Path to coefficient file (.bin or .txt). If empty, uses default names.
+     * @param C Output 2D vector to store cosine coefficients C[l][m].
+     * @param S Output 2D vector to store sine coefficients S[l][m].
+     * @return True if coefficients were loaded successfully, false otherwise.
+     */
+    bool load_EGM2008_coefficients(const std::string& coefficient_path, std::vector<std::vector<double>>& C, std::vector<std::vector<double>>& S);
+
+    /**
+     * @brief Controls verbosity of coefficient loading messages.
+     * @param verbose If true (default), shows coefficient loading messages. If false, suppresses them.
+     */
+    void set_coefficient_loading_verbose(bool verbose);
 }
 
 #include "SHG.tpp" // Include template implementations
