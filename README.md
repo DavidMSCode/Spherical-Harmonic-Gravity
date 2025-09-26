@@ -29,7 +29,7 @@ make
 # Run C++ examples
 ./GravityCalc      # Gravity field calculator
 ./PotentialCalc    # Gravitational potential calculator
-./Main             # Main example program
+./Demo             # Demo program that calculates gravity and potential at sample locations
 ```
 
 ### Python Build

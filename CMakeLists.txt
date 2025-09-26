@@ -20,6 +20,6 @@ target_link_libraries(GravityCalc SHG)
 add_executable(PotentialCalc src/egm2008_potential_calc.cpp)
 target_link_libraries(PotentialCalc SHG)
 
-add_executable(Main src/main.cpp)
-target_link_libraries(Main SHG)
+add_executable(Demo src/Demo.cpp)
+target_link_libraries(Demo SHG)
 

@@ -279,13 +279,27 @@ namespace SHG
         {
             return false; // Failed to open file
         }
+        
+        // Get file size for progress tracking
+        file.seekg(0, std::ios::end);
+        std::streampos file_size = file.tellg();
+        file.seekg(0, std::ios::beg);
+        
         // Resize C and S to hold coefficients up to l_max and m_max
         C.resize(l_max + 1, std::vector<double>(m_max + 1, 0.0));
         S.resize(l_max + 1, std::vector<double>(m_max + 1, 0.0));
+        
         std::string line;
+        int coefficients_read = 0;
+        std::streampos bytes_read = 0;
+        const int progress_width = 50;
+        
+        std::cout << "Loading EGM2008 coefficients from text file..." << std::endl;
+        
         while (std::getline(file, line))
         {
-            std::cout << "Reading line: " << line << std::endl;
+            bytes_read = file.tellg();
+            
             // Replace 'D' or 'd' with 'E' for scientific notation compatibility
             for (char &ch : line)
             {
@@ -303,8 +317,32 @@ namespace SHG
             {
                 C[l][m] = c;
                 S[l][m] = s;
+                coefficients_read++;
+            }
+            
+            // Update progress bar every 1000 coefficients
+            if (coefficients_read % 1000 == 0 && file_size > 0)
+            {
+                double progress = static_cast<double>(bytes_read) / static_cast<double>(file_size);
+                int filled = static_cast<int>(progress * progress_width);
+                
+                std::cout << "\r[";
+                for (int i = 0; i < progress_width; ++i)
+                {
+                    if (i < filled) std::cout << "=";
+                    else if (i == filled) std::cout << ">";
+                    else std::cout << " ";
+                }
+                std::cout << "] " << static_cast<int>(progress * 100) << "% (" 
+                          << coefficients_read << " coefficients)" << std::flush;
             }
         }
+        
+        // Final progress update
+        std::cout << "\r[";
+        for (int i = 0; i < progress_width; ++i) std::cout << "=";
+        std::cout << "] 100% (" << coefficients_read << " coefficients loaded)" << std::endl;
+        
         file.close();
         return true;
     }
@@ -410,7 +448,7 @@ namespace SHG
             static bool text_success_shown = false;
             if (!text_success_shown && g_verbose_coefficient_loading) {
                 std::cout << "Successfully loaded EGM2008 coefficients from text file: " << txt_file << std::endl;
-                
+            }
                 // Try to create binary file for faster future loading
                 std::cout << "Creating binary file '" << bin_file << "' for faster future loading..." << std::endl;
                 if (write_coefficients_binary(bin_file, C, S, EGM2008_MAX_DEGREE, EGM2008_MAX_ORDER)) {
@@ -419,7 +457,7 @@ namespace SHG
                     std::cout << "Warning: Failed to create binary file: " << bin_file << std::endl;
                 }
                 text_success_shown = true;
-            }
+            
             return true;
         }
         

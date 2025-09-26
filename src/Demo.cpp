@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
             // Use new EGM2008 functions with full degree/order (2190)
             auto g_acc = g_EGM2008(r, phi, lambda, deg);
             double g_mag = std::sqrt(g_acc[0]*g_acc[0] + g_acc[1]*g_acc[1] + g_acc[2]*g_acc[2]);
-            double potential = U_EGM2008(r, phi, lambda, 2190);
+            double potential = U_EGM2008(r, phi, lambda, deg);
             
             std::cout << std::setw(15) << location_names[i]
                       << std::setw(12) << std::fixed << std::setprecision(4) << lat
