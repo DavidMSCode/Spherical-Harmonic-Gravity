@@ -80,7 +80,7 @@ python examples/load_gravity_data_demo.py
 
 ## Technical Notes
 
-- Uses unmodified forward column method (degree limit ~1900)
+- Uses unmodified forward column method for computing the associate Legendre functions (order limit ~1900)
 - Supports spherical coordinates (r, theta, phi) in geocentric frame and cartesian (x, y, z) coordinates
 - Compatible with EGM2008 and custom gravity field coefficients
 
