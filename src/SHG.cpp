@@ -1,44 +1,41 @@
 /*
  * Spherical Harmonic Gravity (SHG.cpp)
  * -------------------------------------
- * Computes gravitational potential and acceleration using normalized spherical harmonic coefficients.
+ * Computes gravitational potential and acceleration using normalized spherical
+ * harmonic coefficients.
  *
- * Project: Spherical-Harmonic-Gravity
- * License: MIT (see LICENSE file for details)
- * Author: DavidMSCode
- * Created: 2025
+ * Project: Spherical-Harmonic-Gravity License: MIT (see LICENSE file for
+ * details) Author: DavidMSCode Created: 2025
  *
- * This file is part of a permissively licensed project. You may use, modify, and distribute
- * this code for personal or commercial purposes, provided the license is included with any
- * modified source code. No warranty is provided; see LICENSE for details.
+ * This file is part of a permissively licensed project. You may use, modify,
+ * and distribute this code for personal or commercial purposes, provided the
+ * license is included with any modified source code. No warranty is provided;
+ * see LICENSE for details.
  *
- * Code derived from the following sources:
- * Spherical Harmonic Gravity implementation by David A. Vallado
- * - "Fundamentals of Astrodynamics and Applications" by David A. Vallado, 4th Edition
+ * Code derived from the following sources: Spherical Harmonic Gravity
+ * implementation by David A. Vallado
+ * - "Fundamentals of Astrodynamics and Applications" by David A. Vallado, 4th
+ *   Edition
  *
- * Standard forward column method for computing Normalized Associated Legendre Functions (ALFs)
- *  - S. A. Holmes and W. E. Featherstone, "A unified approach to the Clenshaw summation and
- *    the recursive computation of very high degree and order normalized associated Legendre
- *    functions", Journal of Geodesy, vol. 76, pp. 279–299, 2002. https://doi.org/10.1007/s00190-002-0245-x
+ * Standard forward column method for computing Normalized Associated Legendre
+ * Functions (ALFs)
+ *  - Holmes, S., Featherstone, W. A unified approach to the Clenshaw summation
+ *    and the recursive computation of very high degree and order normalised
+ *    associated Legendre functions. Journal of Geodesy 76, 279–299 (2002).
+ *    https://doi.org/10.1007/s00190-002-0216-2
  *
- * Note that is not using the more stable modified methods described in Holmes and Featherstone
- *  for simplicity and the ALFs are not numerically stable for M>1900 in this method.
+ * Note that is not using the more stable modified methods described in Holmes
+ *  and Featherstone for simplicity and the ALFs are not numerically stable for
+ *  M>1900 in this method.
  *
- * Don't be confused by the colatitude (theta) vs latitude (phi) notation in Vallado's book. The
- * ALFs of the sine of the geocentric latitude (phi) are the exact same as the ALFs of the cosine
- * of the colatitude (theta).
+ * Don't be confused by the colatitude (theta) vs latitude (phi) notation in
+ * Vallado's book. The ALFs of the sine of the geocentric latitude (phi) are the
+ * exact same as the ALFs of the cosine of the colatitude (theta).
  *
- * Nomenclature follows Vallado's conventions where applicable.
- * l - degree
- * m - order
- * C - cosine coefficient
- * S - sine coefficient
- * P - associated Legendre polynomial
- * r - radial distance
- * phi - geocentric latitude
- * lambda - longitude
- * GM - gravitational parameter
- * a - reference radius
+ * Nomenclature follows Vallado's conventions where applicable. l - degree m -
+ * order C - cosine coefficient S - sine coefficient P - associated Legendre
+ * polynomial r - radial distance phi - geocentric latitude lambda - longitude
+ * GM - gravitational parameter a - reference radius
  */
 
 #include <vector>
@@ -369,7 +366,7 @@ namespace SHG
         if (coefficient_path.empty()) {
             // Use default file names
             bin_file = "EGM2008Coeffs.bin";
-            txt_file = "EGM2008_to2190_TideFree.txt";
+            txt_file = "EGM2008_to2190_TideFree";
         } else {
             // Check if provided path is .bin or .txt
             if (coefficient_path.substr(coefficient_path.length() - 4) == ".bin") {

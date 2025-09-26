@@ -296,7 +296,7 @@ Points: {gravity_mag.size:,}"""
     ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, fontsize=10,
             verticalalignment='top', bbox=props, fontfamily='monospace')
     
-    plt.title(f"{title}\nOptimized Range: {vmin} to {vmax} mGal", fontsize=14, fontweight='bold')
+    plt.title(f"{title}", fontsize=14, fontweight='bold')
     plt.tight_layout()
     
     if filename:

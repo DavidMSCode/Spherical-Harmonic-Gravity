@@ -42,18 +42,26 @@ except ImportError:
 def plot_gravity_field_basic(lat_grid, lon_grid, gravity_data, title):
     """Create a simple cartopy plot or fallback to basic matplotlib"""
     
+    # use standard deviation to set colorbar range
+    std_dev = np.nanstd(gravity_data)
+    print(f"Data standard deviation: {std_dev:.2f} mGal")
+    mean_val = np.nanmean(gravity_data)
+    print(f"Data mean value: {mean_val:.2f} mGal")
     # Use preferred colorbar range
-    vmin, vmax = -70, 90
-    
+    vmin, vmax = mean_val - 5*std_dev, mean_val + 5*std_dev
     if CARTOPY_AVAILABLE:
         # Simple Mollweide projection cartopy plot
         fig = plt.figure(figsize=(15, 8))
         ax = plt.axes(projection=ccrs.Mollweide())
         
-        # Plot data with simple contours (transform from PlateCarree)
-        im = ax.contourf(lon_grid, lat_grid, gravity_data, 
-                        levels=30, vmin=vmin, vmax=vmax,
-                        cmap='plasma', extend='both',
+        # # Plot data with simple contours (transform from PlateCarree)
+        # im = ax.contourf(lon_grid, lat_grid, gravity_data, 
+        #                 levels=30, vmin=vmin, vmax=vmax,
+        #                 cmap='plasma', extend='both',
+        #                 transform=ccrs.PlateCarree())
+        im = ax.pcolormesh(lon_grid, lat_grid, gravity_data, 
+                        norm=colors.Normalize(vmin=vmin, vmax=vmax),
+                        cmap='plasma', shading='gouraud',
                         transform=ccrs.PlateCarree())
         
         # Add coastlines
@@ -65,7 +73,7 @@ def plot_gravity_field_basic(lat_grid, lon_grid, gravity_data, title):
         # Colorbar
         cbar = plt.colorbar(im, ax=ax, shrink=0.8)
         cbar.set_label('Gravity Anomalies (mGal)')
-        
+       #use interpolated shading for smoother look
     else:
         # Basic matplotlib fallback
         fig, ax = plt.subplots(figsize=(12, 8))
@@ -82,7 +90,7 @@ def plot_gravity_field_basic(lat_grid, lon_grid, gravity_data, title):
         cbar = plt.colorbar(im, ax=ax)
         cbar.set_label('Gravity Anomalies (mGal)')
     
-    plt.title(f"{title}\nRange: {vmin} to {vmax} mGal")
+    plt.title(f"{title}")
     plt.tight_layout()
     plt.show()
 
@@ -131,6 +139,12 @@ def demonstrate_data_loading():
         # Load the data
         data = load_gravity_data(data_file)
         
+        #get title from .npz file
+        if 'title' in data:
+            title = data['title']
+        else:
+            title = "Gravity Field Data"    
+        
         print(f"Data shape: {data['gravity_anomalies'].shape}")
         print(f"Lat range: {np.nanmin(data['lat_grid']):.1f}° to {np.nanmax(data['lat_grid']):.1f}°")
         print(f"Lon range: {np.nanmin(data['lon_grid']):.1f}° to {np.nanmax(data['lon_grid']):.1f}°")
@@ -141,7 +155,7 @@ def demonstrate_data_loading():
             data['lat_grid'],
             data['lon_grid'],
             data['gravity_anomalies'],
-            title=f"Gravity Field: {os.path.basename(data_file)}"
+            title=title
         )
         
         # Save the replotted version

@@ -37,6 +37,8 @@ int main(int argc, char *argv[])
     std::vector<std::string> location_names = {
         "Washington D.C.", "New York City", "London", "Tokyo", "Sydney"
     };
+    int deg = 1200;
+    std::cout << "=== Testing with EGM2008 model (degree 1200) ===\n" << std::endl;
 
     std::cout << std::setw(15) << "Location"
               << std::setw(12) << "Lat (°)"
@@ -56,10 +58,10 @@ int main(int argc, char *argv[])
         double phi = lat * M_PI / 180.0;  // Geocentric latitude in radians
         double lambda = lon * M_PI / 180.0;  // Longitude in radians
         double r = 6378137.0 + alt_km * 1000.0;  // Approximate radius in meters
-        
+
         try {
             // Use new EGM2008 functions with full degree/order (2190)
-            auto g_acc = g_EGM2008(r, phi, lambda, 2190);
+            auto g_acc = g_EGM2008(r, phi, lambda, deg);
             double g_mag = std::sqrt(g_acc[0]*g_acc[0] + g_acc[1]*g_acc[1] + g_acc[2]*g_acc[2]);
             double potential = U_EGM2008(r, phi, lambda, 2190);
             
@@ -83,12 +85,11 @@ int main(int argc, char *argv[])
     double phi = 0.0;  // Equator
     double lambda = 0.0;  // Prime meridian
     
-    std::vector<int> test_degrees = {2, 10, 50, 180, 360, 2190};
+    std::vector<int> test_degrees = {2, 10, 50, 180, 360, 1800};
     
     std::cout << std::setw(10) << "Degree"
               << std::setw(18) << "g_magnitude (m/s²)"
               << std::setw(20) << "U (×10¹² m²/s²)"
-              << std::setw(15) << "Notes"
               << std::endl;
     std::cout << std::string(75, '-') << std::endl;
     
@@ -102,13 +103,6 @@ int main(int argc, char *argv[])
                       << std::setw(18) << std::fixed << std::setprecision(8) << g_mag
                       << std::setw(20) << std::fixed << std::setprecision(6) << potential/1e12
                       << std::setw(15);
-            
-            if (degree == 2) std::cout << "Point mass only";
-            else if (degree <= 10) std::cout << "Low resolution";
-            else if (degree <= 50) std::cout << "Medium res";
-            else if (degree <= 180) std::cout << "High res";
-            else if (degree <= 360) std::cout << "Very high res";
-            else std::cout << "Full EGM2008";
             
             std::cout << std::endl;
             
