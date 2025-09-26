@@ -63,8 +63,8 @@ wget https://earth-info.nga.mil/php/download.php?file=egm-08spherical
 ```python
 # Compute gravitational acceleration at a point
 import pyshg
-r, theta, phi = 6371000, 0.5, 1.0  # radius (m), colatitude, longitude (rad)
-g_vector = pyshg.g_EGM2008(r, theta, phi, max_degree=360)
+r, phi, lam = 6371000, 0.5, 1.0  # radius (m), geocentric latitude (rad), longitude (rad)
+g_vector = pyshg.g_EGM2008(r, phi, lam, max_degree=360)
 
 # Run demonstration examples
 python examples/earth_gravity_visualization.py
