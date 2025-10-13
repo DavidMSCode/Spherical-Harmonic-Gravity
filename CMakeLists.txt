@@ -5,9 +5,6 @@ project(SphericalHarmonicGravity)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Add external libraries
-add_subdirectory(extern/APCGrav)
-
 #Main SHG library
 include_directories(include)
 file(GLOB SHG_SRC "src/*.cpp")
