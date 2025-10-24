@@ -519,6 +519,43 @@ namespace SHG
                                        C_cache, S_cache, EGM2008_A, EGM2008_GM);
     }
 
+    std::array<double, 3> g_EGM2008_KM(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path)
+    {
+        static std::vector<std::vector<double>> C_cache, S_cache;
+        static bool coefficients_loaded = false;
+        static std::string last_path = "";
+        
+        // Validate max_degree
+        if (max_degree > EGM2008_MAX_DEGREE) {
+            static bool degree_warning_shown = false;
+            if (!degree_warning_shown) {
+                std::cerr << "WARNING: Requested degree " << max_degree << " exceeds EGM2008 maximum " 
+                          << EGM2008_MAX_DEGREE << ". Using maximum available." << std::endl;
+                degree_warning_shown = true;
+            }
+            max_degree = EGM2008_MAX_DEGREE;
+        }
+        
+        // Load coefficients if not already loaded or if path changed
+        if (!coefficients_loaded || coefficient_path != last_path) {
+            if (!load_EGM2008_coefficients(coefficient_path, C_cache, S_cache)) {
+                // Only show this error once per session for g_EGM2008
+                static bool g_error_shown = false;
+                if (!g_error_shown) {
+                    std::cerr << "ERROR: Cannot compute g_EGM2008 without coefficients." << std::endl;
+                    g_error_shown = true;
+                }
+                return {0.0, 0.0, 0.0};
+            }
+            coefficients_loaded = true;
+            last_path = coefficient_path;
+        }
+        
+        // Compute gravitational acceleration using EGM2008 model with user-specified degree
+        return g<std::array<double, 3>>(r, phi, lambda, max_degree, max_degree, 
+                                       C_cache, S_cache, EGM2008_A_KM, EGM2008_GM_KM);
+    }
+
     double U_EGM2008(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path)
     {
         static std::vector<std::vector<double>> C_cache, S_cache;
@@ -554,6 +591,43 @@ namespace SHG
         // Compute gravitational potential using EGM2008 model with user-specified degree
         return pot(r, phi, lambda, max_degree, max_degree, 
                   C_cache, S_cache, EGM2008_A, EGM2008_GM);
+    }
+
+    double U_EGM2008_KM(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path)
+    {
+        static std::vector<std::vector<double>> C_cache, S_cache;
+        static bool coefficients_loaded = false;
+        static std::string last_path = "";
+        
+        // Validate max_degree
+        if (max_degree > EGM2008_MAX_DEGREE) {
+            static bool degree_warning_shown = false;
+            if (!degree_warning_shown) {
+                std::cerr << "WARNING: Requested degree " << max_degree << " exceeds EGM2008 maximum " 
+                          << EGM2008_MAX_DEGREE << ". Using maximum available." << std::endl;
+                degree_warning_shown = true;
+            }
+            max_degree = EGM2008_MAX_DEGREE;
+        }
+        
+        // Load coefficients if not already loaded or if path changed
+        if (!coefficients_loaded || coefficient_path != last_path) {
+            if (!load_EGM2008_coefficients(coefficient_path, C_cache, S_cache)) {
+                // Only show this error once per session for U_EGM2008
+                static bool u_error_shown = false;
+                if (!u_error_shown) {
+                    std::cerr << "ERROR: Cannot compute U_EGM2008 without coefficients." << std::endl;
+                    u_error_shown = true;
+                }
+                return 0.0;
+            }
+            coefficients_loaded = true;
+            last_path = coefficient_path;
+        }
+        
+        // Compute gravitational potential using EGM2008 model with user-specified degree
+        return pot(r, phi, lambda, max_degree, max_degree, 
+                  C_cache, S_cache, EGM2008_A_KM, EGM2008_GM_KM);
     }
 
     void set_coefficient_loading_verbose(bool verbose) {
