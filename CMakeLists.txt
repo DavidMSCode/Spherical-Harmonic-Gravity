@@ -8,8 +8,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-# Add external libraries
-add_subdirectory(extern/APCGrav)
 
 #Main SHG library
 include_directories(include)
@@ -69,6 +67,8 @@ install(EXPORT SHGTargets
 	FILE SHGTargets.cmake
 	NAMESPACE SHG::
 	DESTINATION ${SHG_INSTALL_CMAKEDIR}
+)
+
 #Share include directories with higher level cmakelists
 target_include_directories(SHG PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
