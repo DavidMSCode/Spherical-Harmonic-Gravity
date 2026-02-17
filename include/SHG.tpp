@@ -12,7 +12,7 @@ template <typename T>
 T g(double r, double phi, double lambda, int l_max, int m_max, const std::vector<std::vector<double>> &C, const std::vector<std::vector<double>> &S, double a, double GM)
 {
     using namespace SHG;
-    std::vector<std::vector<double>> P = Plm_bar(l_max, m_max, phi);
+    std::vector<std::vector<double>> P = Plm_bar(l_max+1, m_max+1, phi);
     std::vector<double> mTan = recursive_tangent(m_max, phi);
     auto [sinL, cosL] = recursive_sine_cosine(m_max, lambda);
     double dudr = 1.0;
