@@ -150,6 +150,19 @@ namespace SHG {
     std::array<double, 3> g_EGM2008(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path = "");
 
     /**
+     * @brief Computes gravitational acceleration using EGM2008 model with user-specified degree.
+     * Automatically loads coefficients from binary or text file with fallback.
+     * @param r Geocentric radius in kilometers.
+     * @param phi Geocentric latitude in radians.
+     * @param lambda Longitude in radians.
+     * @param max_degree Maximum degree (and order) to use. Must be <= 2190.
+     * @param coefficient_path Optional path to EGM2008 coefficient file (.bin or .txt). 
+     *                        If empty, searches for "EGM2008Coeffs.bin" then "EGM2008_to2190_TideFree.txt"
+     * @return Array of gravitational acceleration components [aI, aJ, aK] in km/s².
+     */
+    std::array<double, 3> g_EGM2008_KM(double r, double phi, double lambda, int max_degree, const std::string &coefficient_path="");
+
+    /**
      * @brief Computes gravitational potential using EGM2008 model with user-specified degree.
      * Automatically loads coefficients from binary or text file with fallback.
      * @param r Geocentric radius in meters.
@@ -161,6 +174,19 @@ namespace SHG {
      * @return Gravitational potential in m²/s².
      */
     double U_EGM2008(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path = "");
+
+    /**
+     * @brief Computes gravitational potential using EGM2008 model with user-specified degree.
+     * Automatically loads coefficients from binary or text file with fallback.
+     * @param r Geocentric radius in kilometers.
+     * @param phi Geocentric latitude in radians.
+     * @param lambda Longitude in radians.
+     * @param max_degree Maximum degree (and order) to use. Must be <= 2190.
+     * @param coefficient_path Optional path to EGM2008 coefficient file (.bin or .txt).
+     *                        If empty, searches for "EGM2008Coeffs.bin" then "EGM2008_to2190_TideFree.txt"
+     * @return Gravitational potential in km²/s².
+     */
+    double U_EGM2008_KM(double r, double phi, double lambda, int max_degree, const std::string &coefficient_path = "");
 
     /**
      * @brief Loads EGM2008 coefficients with automatic fallback from binary to text format.

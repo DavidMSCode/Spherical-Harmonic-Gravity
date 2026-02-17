@@ -69,5 +69,9 @@ install(EXPORT SHGTargets
 	FILE SHGTargets.cmake
 	NAMESPACE SHG::
 	DESTINATION ${SHG_INSTALL_CMAKEDIR}
+#Share include directories with higher level cmakelists
+target_include_directories(SHG PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
 )
 
