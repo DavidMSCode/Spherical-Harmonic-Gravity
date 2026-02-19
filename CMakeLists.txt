@@ -5,6 +5,8 @@ project(SphericalHarmonicGravity VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+enable_testing()
+
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
@@ -28,6 +30,17 @@ target_link_libraries(PotentialCalc SHG)
 
 add_executable(Demo src/Demo.cpp)
 target_link_libraries(Demo SHG)
+
+# Regression tests (CTest)
+add_executable(EGM2008RegressionTest tests/egm2008_regression_ctest.cpp)
+target_link_libraries(EGM2008RegressionTest SHG)
+add_executable(EGM2008BaselineGenerator tests/egm2008_generate_baseline.cpp)
+target_link_libraries(EGM2008BaselineGenerator SHG)
+add_test(
+	NAME EGM2008Regression
+	COMMAND EGM2008RegressionTest ${CMAKE_SOURCE_DIR}/tests/egm2008_regression_baseline.csv
+)
+set_tests_properties(EGM2008Regression PROPERTIES WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Install targets and headers
 install(TARGETS SHG
