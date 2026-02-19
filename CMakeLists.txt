@@ -34,17 +34,28 @@ target_link_libraries(Demo SHG)
 # Profiling utility
 add_executable(EGM2008ProfileRunner tests/egm2008_profile_runner.cpp)
 target_link_libraries(EGM2008ProfileRunner SHG)
+add_executable(EGM2008ProfileAccel tests/egm2008_profile_accel.cpp)
+target_link_libraries(EGM2008ProfileAccel SHG)
+add_executable(EGM2008ProfilePotential tests/egm2008_profile_potential.cpp)
+target_link_libraries(EGM2008ProfilePotential SHG)
 
 # Regression tests (CTest)
 add_executable(EGM2008RegressionTest tests/egm2008_regression_ctest.cpp)
 target_link_libraries(EGM2008RegressionTest SHG)
 add_executable(EGM2008BaselineGenerator tests/egm2008_generate_baseline.cpp)
 target_link_libraries(EGM2008BaselineGenerator SHG)
+add_executable(EGM2008WorkspaceToggleTest tests/egm2008_workspace_toggle_ctest.cpp)
+target_link_libraries(EGM2008WorkspaceToggleTest SHG)
 add_test(
 	NAME EGM2008Regression
 	COMMAND EGM2008RegressionTest ${CMAKE_SOURCE_DIR}/tests/egm2008_regression_baseline.csv
 )
 set_tests_properties(EGM2008Regression PROPERTIES WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_test(
+	NAME EGM2008WorkspaceToggle
+	COMMAND EGM2008WorkspaceToggleTest
+)
+set_tests_properties(EGM2008WorkspaceToggle PROPERTIES WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Install targets and headers
 install(TARGETS SHG

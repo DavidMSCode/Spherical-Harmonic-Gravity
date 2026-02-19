@@ -46,6 +46,8 @@
 #include <string>
 #include <utility> // for std::pair
 #include <chrono>
+#include <atomic>
+#include <algorithm>
 #include <unistd.h> // for getcwd
 
 #include "SHG.hpp"
@@ -54,6 +56,7 @@ namespace SHG
 {
     // Global flag to control verbosity of coefficient loading messages
     static bool g_verbose_coefficient_loading = false;
+    static std::atomic<bool> g_workspace_enabled{true};
 
     // Reads a block of coefficients from (0,0) to (l,m) from the binary file
     // Returns true if successful, false otherwise
@@ -167,7 +170,7 @@ namespace SHG
     // P(l,l) = sqrt((2l+1)/(2l))*cos(phi)*P(l-1,l-1)
     // P(l,l-1) = sqrt(2l+1)*sin(phi)*P(l-1,l-1)
     // P(l,m) = sqrt((2l+1)/(l-m)(l+m))*[sqrt(2l-1)*sin(phi)*P(l-1,m) - sqrt((l-1+m)(l-1-m)/(2l-3))*P(l-2,m)]
-    std::vector<std::vector<double>> Plm_bar(int l_max, int m_max, double phi)
+    void Plm_bar_inplace(int l_max, int m_max, double phi, std::vector<std::vector<double>>& P)
     {
         // Warning about numerical stability for high orders
         static bool high_order_warning_shown = false;
@@ -185,11 +188,13 @@ namespace SHG
 
         if (m_max > l_max)
             m_max = l_max;
-        if (l_max < 0 || m_max < 0)
-            return {};
+        if (l_max < 0 || m_max < 0) {
+            P.clear();
+            return;
+        }
 
         // P[n][m]
-        std::vector<std::vector<double>> P(l_max + 1, std::vector<double>(m_max + 1, 0.0));
+        P.assign(l_max + 1, std::vector<double>(m_max + 1, 0.0));
 
         // sectoral seeds
         P[0][0] = 1.0;
@@ -224,14 +229,96 @@ namespace SHG
             }
         }
 
+    }
+
+    std::vector<std::vector<double>> Plm_bar(int l_max, int m_max, double phi)
+    {
+        std::vector<std::vector<double>> P;
+        Plm_bar_inplace(l_max, m_max, phi, P);
         return P;
+    }
+
+    void Plm_bar_flat_inplace(int l_max, int m_max, double phi, std::vector<double>& P_flat)
+    {
+        // Warning about numerical stability for high orders
+        static bool high_order_warning_shown = false;
+        if ((m_max > 1900 || l_max > 1900) && !high_order_warning_shown) {
+            std::cerr << "WARNING: Computing normalized Associated Legendre Functions (ALFs) with degree/order > 1900." << std::endl;
+            std::cerr << "         Results may be numerically unstable. Consider limiting computations to" << std::endl;
+            std::cerr << "         degree/order ≤ 1900 for reliable results." << std::endl;
+            high_order_warning_shown = true;
+        }
+
+        // theta = colatitude
+        const double theta = M_PI_2 - phi;
+        const double u = std::sin(theta);
+        const double t = std::cos(theta);
+
+        if (m_max > l_max)
+            m_max = l_max;
+        if (l_max < 0 || m_max < 0) {
+            P_flat.clear();
+            return;
+        }
+
+        const int cols = m_max + 1;
+        const size_t needed = static_cast<size_t>(l_max + 1) * static_cast<size_t>(cols);
+
+        if (P_flat.size() != needed) {
+            P_flat.resize(needed);
+        }
+
+        auto idx = [cols](int l, int m) -> size_t {
+            return static_cast<size_t>(l) * static_cast<size_t>(cols) + static_cast<size_t>(m);
+        };
+
+        // sectoral seeds
+        P_flat[idx(0, 0)] = 1.0;
+        if (l_max >= 1 && m_max >= 1)
+        {
+            P_flat[idx(1, 1)] = std::sqrt(3.0) * u;
+        }
+        for (int l = 2; l <= l_max && l <= m_max; ++l)
+        {
+            P_flat[idx(l, l)] = std::sqrt((2.0 * l + 1.0) / (2.0 * l)) * u * P_flat[idx(l - 1, l - 1)];
+        }
+
+        // columns (fixed m), increasing degree l
+        for (int m = 0; m <= m_max; ++m)
+        {
+            if (m + 1 <= l_max)
+            {
+                P_flat[idx(m + 1, m)] = std::sqrt(2.0 * m + 3.0) * t * P_flat[idx(m, m)];
+            }
+            for (int l = m + 2; l <= l_max; ++l)
+            {
+                const double anm = std::sqrt(((2.0 * l - 1.0) * (2.0 * l + 1.0)) / ((l - m) * (l + m)));
+                const double bnm = std::sqrt(((2.0 * l + 1.0) * (l + m - 1.0) * (l - m - 1.0)) /
+                                             ((l - m) * (l + m) * (2.0 * l - 3.0)));
+                P_flat[idx(l, m)] = anm * t * P_flat[idx(l - 1, m)] - bnm * P_flat[idx(l - 2, m)];
+            }
+        }
+
+        // Ensure superdiagonal terms are zero for derivative access in acceleration path:
+        // g(...) uses P[l][m+1], so when m=l we need P[l][l+1] = 0 each call.
+        const int superdiag_max_l = std::min(l_max, m_max - 1);
+        for (int l = 0; l <= superdiag_max_l; ++l)
+        {
+            P_flat[idx(l, l + 1)] = 0.0;
+        }
     }
 
     // Recursive tangent function to compute mTan(phi) = (m-1)Tan(phi) + Tan(phi).
     // returns a vector of size m_max+1 where the index corresponds to m
-    std::vector<double> recursive_tangent(int m_max, double phi)
+    void recursive_tangent_inplace(int m_max, double phi, std::vector<double>& mTan)
     {
-        std::vector<double> mTan(m_max + 1, 0.0);
+        const size_t needed = static_cast<size_t>(m_max + 1);
+
+        if (mTan.size() != needed) {
+            mTan.resize(needed);
+        }
+        std::fill(mTan.begin(), mTan.end(), 0.0);
+
         mTan[0] = 0.0; // 0*Tan(phi) = 0
         if (m_max >= 1)
         {
@@ -241,16 +328,31 @@ namespace SHG
         {
             mTan[m] = mTan[m - 1] + mTan[1];
         }
+    }
+
+    std::vector<double> recursive_tangent(int m_max, double phi)
+    {
+        std::vector<double> mTan;
+        recursive_tangent_inplace(m_max, phi, mTan);
         return mTan;
     }
 
     // Recursive trig of longitude to compute SIN(m*lambda), COS(m*lambda) for m=0 to m_max. returns a vector of size m_max+1 where the index corresponds to m
     //  SIN(m*lambda) = 2*COS(lambda)*SIN((m-1)*lambda) - SIN((m-2)*lambda)
     //  COS(m*lambda) = 2*COS(lambda)*COS((m-1)*lambda) - COS((m-2)*lambda)
-    std::pair<std::vector<double>, std::vector<double>> recursive_sine_cosine(int m_max, double lambda)
+    void recursive_sine_cosine_inplace(int m_max, double lambda, std::vector<double>& sinL, std::vector<double>& cosL)
     {
-        std::vector<double> sinL(m_max + 1, 0.0);
-        std::vector<double> cosL(m_max + 1, 0.0);
+        const size_t needed = static_cast<size_t>(m_max + 1);
+
+        if (sinL.size() != needed) {
+            sinL.resize(needed);
+        }
+        if (cosL.size() != needed) {
+            cosL.resize(needed);
+        }
+        std::fill(sinL.begin(), sinL.end(), 0.0);
+        std::fill(cosL.begin(), cosL.end(), 0.0);
+
         sinL[0] = 0.0; // sin(0*lambda) = 0
         cosL[0] = 1.0; // cos(0*lambda) = 1
 
@@ -264,6 +366,13 @@ namespace SHG
             sinL[m] = 2 * cosL[1] * sinL[m - 1] - sinL[m - 2];
             cosL[m] = 2 * cosL[1] * cosL[m - 1] - cosL[m - 2];
         }
+    }
+
+    std::pair<std::vector<double>, std::vector<double>> recursive_sine_cosine(int m_max, double lambda)
+    {
+        std::vector<double> sinL;
+        std::vector<double> cosL;
+        recursive_sine_cosine_inplace(m_max, lambda, sinL, cosL);
         return {sinL, cosL};
     }
 
@@ -353,14 +462,47 @@ namespace SHG
                                            const std::vector<std::vector<double>> &S,
                                            double a, double GM)
     {
-        // Compute normalized Legendre polynomials
+        if (is_workspace_enabled()) {
+            static thread_local std::vector<double> P_ws_flat;
+            static thread_local std::vector<double> sinL_ws;
+            static thread_local std::vector<double> cosL_ws;
+            Plm_bar_flat_inplace(l_max, m_max, phi, P_ws_flat);
+            recursive_sine_cosine_inplace(m_max, lambda, sinL_ws, cosL_ws);
+
+            const int cols = m_max + 1;
+            auto p_idx = [cols](int l, int m) -> size_t {
+                return static_cast<size_t>(l) * static_cast<size_t>(cols) + static_cast<size_t>(m);
+            };
+
+            double V = GM / r;
+            const double a_over_r = a / r;
+            double r_ratio_l = a_over_r; // (a/r)^1
+            for (int l = 2; l <= l_max; ++l)
+            {
+                r_ratio_l *= a_over_r; // (a/r)^l
+                for (int m = 0; m <= l; ++m)
+                {
+                    double C_lm = C[l][m];
+                    double S_lm = S[l][m];
+                    double P_lm = P_ws_flat[p_idx(l, m)];
+                    double cos_m_lambda = cosL_ws[m];
+                    double sin_m_lambda = sinL_ws[m];
+                    V += GM / r * r_ratio_l * P_lm * (C_lm * cos_m_lambda + S_lm * sin_m_lambda);
+                }
+            }
+            return V;
+        }
+
+        // Non-workspace path: preserve original behavior/allocation pattern for A/B comparison
         std::vector<std::vector<double>> P = Plm_bar(l_max, m_max, phi);
-        // Compute recursive sine and cosine values
         auto [sinL, cosL] = recursive_sine_cosine(m_max, lambda);
+
         double V = GM / r;
+        const double a_over_r = a / r;
+        double r_ratio_l = a_over_r; // (a/r)^1
         for (int l = 2; l <= l_max; ++l)
         {
-            double r_ratio_l = pow(a / r, l);
+            r_ratio_l *= a_over_r; // (a/r)^l
             for (int m = 0; m <= l; ++m)
             {
                 double C_lm = C[l][m];
@@ -632,5 +774,13 @@ namespace SHG
 
     void set_coefficient_loading_verbose(bool verbose) {
         g_verbose_coefficient_loading = verbose;
+    }
+
+    void set_workspace_enabled(bool enabled) {
+        g_workspace_enabled.store(enabled, std::memory_order_relaxed);
+    }
+
+    bool is_workspace_enabled() {
+        return g_workspace_enabled.load(std::memory_order_relaxed);
     }
 }

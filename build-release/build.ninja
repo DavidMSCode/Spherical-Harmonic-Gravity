@@ -210,6 +210,72 @@ build EGM2008ProfileRunner: CXX_EXECUTABLE_LINKER__EGM2008ProfileRunner_Release 
   TARGET_PDB = EGM2008ProfileRunner.dbg
 
 # =============================================================================
+# Object build statements for EXECUTABLE target EGM2008ProfileAccel
+
+
+#############################################
+# Order-only phony target for EGM2008ProfileAccel
+
+build cmake_object_order_depends_target_EGM2008ProfileAccel: phony || cmake_object_order_depends_target_SHG
+
+build CMakeFiles/EGM2008ProfileAccel.dir/tests/egm2008_profile_accel.cpp.o: CXX_COMPILER__EGM2008ProfileAccel_Release /Users/davidstanley/Documents/Github/Spherical-Harmonic-Gravity/tests/egm2008_profile_accel.cpp || cmake_object_order_depends_target_EGM2008ProfileAccel
+  DEP_FILE = CMakeFiles/EGM2008ProfileAccel.dir/tests/egm2008_profile_accel.cpp.o.d
+  FLAGS = -O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -mmacosx-version-min=15.6 -std=gnu++17
+  INCLUDES = -I/Users/davidstanley/Documents/Github/Spherical-Harmonic-Gravity/include
+  OBJECT_DIR = CMakeFiles/EGM2008ProfileAccel.dir
+  OBJECT_FILE_DIR = CMakeFiles/EGM2008ProfileAccel.dir/tests
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target EGM2008ProfileAccel
+
+
+#############################################
+# Link the executable EGM2008ProfileAccel
+
+build EGM2008ProfileAccel: CXX_EXECUTABLE_LINKER__EGM2008ProfileAccel_Release CMakeFiles/EGM2008ProfileAccel.dir/tests/egm2008_profile_accel.cpp.o | libSHG.dylib || libSHG.dylib
+  FLAGS = -O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -mmacosx-version-min=15.6
+  LINK_LIBRARIES = -Wl,-rpath,/Users/davidstanley/Documents/Github/Spherical-Harmonic-Gravity/build-release  libSHG.dylib
+  OBJECT_DIR = CMakeFiles/EGM2008ProfileAccel.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_FILE = EGM2008ProfileAccel
+  TARGET_PDB = EGM2008ProfileAccel.dbg
+
+# =============================================================================
+# Object build statements for EXECUTABLE target EGM2008ProfilePotential
+
+
+#############################################
+# Order-only phony target for EGM2008ProfilePotential
+
+build cmake_object_order_depends_target_EGM2008ProfilePotential: phony || cmake_object_order_depends_target_SHG
+
+build CMakeFiles/EGM2008ProfilePotential.dir/tests/egm2008_profile_potential.cpp.o: CXX_COMPILER__EGM2008ProfilePotential_Release /Users/davidstanley/Documents/Github/Spherical-Harmonic-Gravity/tests/egm2008_profile_potential.cpp || cmake_object_order_depends_target_EGM2008ProfilePotential
+  DEP_FILE = CMakeFiles/EGM2008ProfilePotential.dir/tests/egm2008_profile_potential.cpp.o.d
+  FLAGS = -O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -mmacosx-version-min=15.6 -std=gnu++17
+  INCLUDES = -I/Users/davidstanley/Documents/Github/Spherical-Harmonic-Gravity/include
+  OBJECT_DIR = CMakeFiles/EGM2008ProfilePotential.dir
+  OBJECT_FILE_DIR = CMakeFiles/EGM2008ProfilePotential.dir/tests
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target EGM2008ProfilePotential
+
+
+#############################################
+# Link the executable EGM2008ProfilePotential
+
+build EGM2008ProfilePotential: CXX_EXECUTABLE_LINKER__EGM2008ProfilePotential_Release CMakeFiles/EGM2008ProfilePotential.dir/tests/egm2008_profile_potential.cpp.o | libSHG.dylib || libSHG.dylib
+  FLAGS = -O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -mmacosx-version-min=15.6
+  LINK_LIBRARIES = -Wl,-rpath,/Users/davidstanley/Documents/Github/Spherical-Harmonic-Gravity/build-release  libSHG.dylib
+  OBJECT_DIR = CMakeFiles/EGM2008ProfilePotential.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_FILE = EGM2008ProfilePotential
+  TARGET_PDB = EGM2008ProfilePotential.dbg
+
+# =============================================================================
 # Object build statements for EXECUTABLE target EGM2008RegressionTest
 
 
@@ -274,6 +340,39 @@ build EGM2008BaselineGenerator: CXX_EXECUTABLE_LINKER__EGM2008BaselineGenerator_
   PRE_LINK = :
   TARGET_FILE = EGM2008BaselineGenerator
   TARGET_PDB = EGM2008BaselineGenerator.dbg
+
+# =============================================================================
+# Object build statements for EXECUTABLE target EGM2008WorkspaceToggleTest
+
+
+#############################################
+# Order-only phony target for EGM2008WorkspaceToggleTest
+
+build cmake_object_order_depends_target_EGM2008WorkspaceToggleTest: phony || cmake_object_order_depends_target_SHG
+
+build CMakeFiles/EGM2008WorkspaceToggleTest.dir/tests/egm2008_workspace_toggle_ctest.cpp.o: CXX_COMPILER__EGM2008WorkspaceToggleTest_Release /Users/davidstanley/Documents/Github/Spherical-Harmonic-Gravity/tests/egm2008_workspace_toggle_ctest.cpp || cmake_object_order_depends_target_EGM2008WorkspaceToggleTest
+  DEP_FILE = CMakeFiles/EGM2008WorkspaceToggleTest.dir/tests/egm2008_workspace_toggle_ctest.cpp.o.d
+  FLAGS = -O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -mmacosx-version-min=15.6 -std=gnu++17
+  INCLUDES = -I/Users/davidstanley/Documents/Github/Spherical-Harmonic-Gravity/include
+  OBJECT_DIR = CMakeFiles/EGM2008WorkspaceToggleTest.dir
+  OBJECT_FILE_DIR = CMakeFiles/EGM2008WorkspaceToggleTest.dir/tests
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target EGM2008WorkspaceToggleTest
+
+
+#############################################
+# Link the executable EGM2008WorkspaceToggleTest
+
+build EGM2008WorkspaceToggleTest: CXX_EXECUTABLE_LINKER__EGM2008WorkspaceToggleTest_Release CMakeFiles/EGM2008WorkspaceToggleTest.dir/tests/egm2008_workspace_toggle_ctest.cpp.o | libSHG.dylib || libSHG.dylib
+  FLAGS = -O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -mmacosx-version-min=15.6
+  LINK_LIBRARIES = -Wl,-rpath,/Users/davidstanley/Documents/Github/Spherical-Harmonic-Gravity/build-release  libSHG.dylib
+  OBJECT_DIR = CMakeFiles/EGM2008WorkspaceToggleTest.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_FILE = EGM2008WorkspaceToggleTest
+  TARGET_PDB = EGM2008WorkspaceToggleTest.dbg
 
 
 #############################################
@@ -366,7 +465,7 @@ build SHG: phony libSHG.dylib
 #############################################
 # Folder: /Users/davidstanley/Documents/Github/Spherical-Harmonic-Gravity/build-release
 
-build all: phony libSHG.dylib GravityCalc PotentialCalc Demo EGM2008ProfileRunner EGM2008RegressionTest EGM2008BaselineGenerator
+build all: phony libSHG.dylib GravityCalc PotentialCalc Demo EGM2008ProfileRunner EGM2008ProfileAccel EGM2008ProfilePotential EGM2008RegressionTest EGM2008BaselineGenerator EGM2008WorkspaceToggleTest
 
 # =============================================================================
 # Built-in targets

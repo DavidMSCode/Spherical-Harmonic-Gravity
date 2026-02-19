@@ -87,6 +87,25 @@ namespace SHG {
     std::vector<std::vector<double>> Plm_bar(int l_max, int m_max, double phi);
 
     /**
+     * @brief Computes normalized associated Legendre polynomials into a reusable workspace buffer.
+     * @param l_max Maximum degree.
+     * @param m_max Maximum order.
+     * @param phi Geocentric latitude in radians.
+     * @param P Output 2D buffer; resized as needed and filled in-place.
+     */
+    void Plm_bar_inplace(int l_max, int m_max, double phi, std::vector<std::vector<double>>& P);
+
+    /**
+     * @brief Computes normalized associated Legendre polynomials into a flat contiguous buffer.
+     * Layout is row-major with index: l * (m_max + 1) + m.
+     * @param l_max Maximum degree.
+     * @param m_max Maximum order.
+     * @param phi Geocentric latitude in radians.
+     * @param P_flat Output contiguous buffer, resized/fill-managed by the function.
+     */
+    void Plm_bar_flat_inplace(int l_max, int m_max, double phi, std::vector<double>& P_flat);
+
+    /**
      * @brief Computes vector of m*Tan(phi) for m=0 to m_max using recursion formulation.
      * @param m_max Maximum order.
      * @param phi Geocentric latitude in radians.
@@ -95,12 +114,29 @@ namespace SHG {
     std::vector<double> recursive_tangent(int m_max, double phi);
 
     /**
+     * @brief Computes vector of m*Tan(phi) into a reusable buffer.
+     * @param m_max Maximum order.
+     * @param phi Geocentric latitude in radians.
+     * @param mTan Output buffer of size m_max+1.
+     */
+    void recursive_tangent_inplace(int m_max, double phi, std::vector<double>& mTan);
+
+    /**
      * @brief Computes vectors of sin(m*lambda) and cos(m*lambda) for m=0 to m_max using recursion.
      * @param m_max Maximum order.
      * @param lambda Longitude in radians.
      * @return Pair of vectors: first is sin(m*lambda), second is cos(m*lambda).
      */
     std::pair<std::vector<double>, std::vector<double>> recursive_sine_cosine(int m_max, double lambda);
+
+    /**
+     * @brief Computes sin(m*lambda) and cos(m*lambda) into reusable buffers.
+     * @param m_max Maximum order.
+     * @param lambda Longitude in radians.
+     * @param sinL Output buffer of size m_max+1 for sin(m*lambda).
+     * @param cosL Output buffer of size m_max+1 for cos(m*lambda).
+     */
+    void recursive_sine_cosine_inplace(int m_max, double lambda, std::vector<double>& sinL, std::vector<double>& cosL);
 
     /**
      * @brief Reads EGM2008 spherical harmonic coefficients from a text file.
@@ -203,6 +239,17 @@ namespace SHG {
      * @param verbose If true (default), shows coefficient loading messages. If false, suppresses them.
      */
     void set_coefficient_loading_verbose(bool verbose);
+
+    /**
+     * @brief Enables or disables automatic thread-local workspace reuse.
+     * Enabled by default.
+     */
+    void set_workspace_enabled(bool enabled);
+
+    /**
+     * @brief Returns whether automatic thread-local workspace reuse is enabled.
+     */
+    bool is_workspace_enabled();
 }
 
 #include "SHG.tpp" // Include template implementations
