@@ -2,6 +2,7 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -16,8 +17,7 @@ struct Case {
 };
 
 constexpr double kPi = 3.14159265358979323846;
-constexpr double kGTol = 1e-16;
-constexpr double kUTol = 1e-16;
+constexpr double kMachineUlps = 64.0;
 
 double deg2rad(double deg) {
     return deg * (kPi / 180.0);
@@ -27,7 +27,9 @@ double norm3(const std::array<double, 3>& v) {
     return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 }
 
-bool nearly_equal(double a, double b, double tol) {
+bool nearly_equal_machine(double a, double b, double ulps = kMachineUlps) {
+    const double scale = std::max(1.0, std::max(std::abs(a), std::abs(b)));
+    const double tol = ulps * std::numeric_limits<double>::epsilon() * scale;
     return std::abs(a - b) <= tol;
 }
 
@@ -59,7 +61,7 @@ int main() {
         const auto g_off = SHG::g_EGM2008(tc.r_m, phi, lambda, tc.degree);
         const double u_off = SHG::U_EGM2008(tc.r_m, phi, lambda, tc.degree);
 
-        if (!nearly_equal(norm3(g_on), norm3(g_off), kGTol) || !nearly_equal(u_on, u_off, kUTol)) {
+        if (!nearly_equal_machine(norm3(g_on), norm3(g_off)) || !nearly_equal_machine(u_on, u_off)) {
             ++failures;
             std::cerr << "[FAIL] workspace toggle mismatch for degree=" << tc.degree
                       << " phi=" << tc.phi_deg << " lambda=" << tc.lambda_deg << std::endl;

@@ -46,6 +46,8 @@ add_executable(EGM2008BaselineGenerator tests/egm2008_generate_baseline.cpp)
 target_link_libraries(EGM2008BaselineGenerator SHG)
 add_executable(EGM2008WorkspaceToggleTest tests/egm2008_workspace_toggle_ctest.cpp)
 target_link_libraries(EGM2008WorkspaceToggleTest SHG)
+add_executable(EGM2008ThreadSafetyTest tests/egm2008_thread_safety_ctest.cpp)
+target_link_libraries(EGM2008ThreadSafetyTest SHG)
 add_test(
 	NAME EGM2008Regression
 	COMMAND EGM2008RegressionTest ${CMAKE_SOURCE_DIR}/tests/egm2008_regression_baseline.csv
@@ -56,6 +58,11 @@ add_test(
 	COMMAND EGM2008WorkspaceToggleTest
 )
 set_tests_properties(EGM2008WorkspaceToggle PROPERTIES WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_test(
+	NAME EGM2008ThreadSafety
+	COMMAND EGM2008ThreadSafetyTest
+)
+set_tests_properties(EGM2008ThreadSafety PROPERTIES WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Install targets and headers
 install(TARGETS SHG

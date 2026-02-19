@@ -2,6 +2,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -20,14 +21,15 @@ struct RegressionCase {
 };
 
 constexpr double kPi = 3.14159265358979323846;
-constexpr double kAccelTol = 1e-12;
-constexpr double kPotTol = 1e-6;
+constexpr double kMachineUlps = 64.0;
 
 double deg2rad(double deg) {
     return deg * (kPi / 180.0);
 }
 
-bool nearly_equal(double a, double b, double tol) {
+bool nearly_equal_machine(double a, double b, double ulps = kMachineUlps) {
+    const double scale = std::max(1.0, std::max(std::abs(a), std::abs(b)));
+    const double tol = ulps * std::numeric_limits<double>::epsilon() * scale;
     return std::abs(a - b) <= tol;
 }
 
@@ -116,23 +118,27 @@ int main(int argc, char* argv[]) {
         const double g_mag = std::sqrt(g[0] * g[0] + g[1] * g[1] + g[2] * g[2]);
         const double potential = SHG::U_EGM2008(tc.r_m, phi, lambda, tc.degree, coefficient_path);
 
-        const bool accel_ok = nearly_equal(g_mag, tc.expected_accel_mps2, kAccelTol);
-        const bool pot_ok = nearly_equal(potential, tc.expected_potential_m2ps2, kPotTol);
+        const bool accel_ok = nearly_equal_machine(g_mag, tc.expected_accel_mps2);
+        const bool pot_ok = nearly_equal_machine(potential, tc.expected_potential_m2ps2);
 
         if (!accel_ok || !pot_ok) {
             ++failures;
             std::cerr << "[FAIL] " << tc.name << '\n';
             if (!accel_ok) {
+                const double scale = std::max(1.0, std::max(std::abs(g_mag), std::abs(tc.expected_accel_mps2)));
+                const double tol = kMachineUlps * std::numeric_limits<double>::epsilon() * scale;
                 std::cerr << "  acceleration expected=" << tc.expected_accel_mps2
                           << " got=" << g_mag
                           << " |diff|=" << std::abs(g_mag - tc.expected_accel_mps2)
-                          << " tol=" << kAccelTol << '\n';
+                          << " tol=" << tol << '\n';
             }
             if (!pot_ok) {
+                const double scale = std::max(1.0, std::max(std::abs(potential), std::abs(tc.expected_potential_m2ps2)));
+                const double tol = kMachineUlps * std::numeric_limits<double>::epsilon() * scale;
                 std::cerr << "  potential    expected=" << tc.expected_potential_m2ps2
                           << " got=" << potential
                           << " |diff|=" << std::abs(potential - tc.expected_potential_m2ps2)
-                          << " tol=" << kPotTol << '\n';
+                          << " tol=" << tol << '\n';
             }
         }
     }
