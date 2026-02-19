@@ -31,6 +31,10 @@ target_link_libraries(PotentialCalc SHG)
 add_executable(Demo src/Demo.cpp)
 target_link_libraries(Demo SHG)
 
+# Profiling utility
+add_executable(EGM2008ProfileRunner tests/egm2008_profile_runner.cpp)
+target_link_libraries(EGM2008ProfileRunner SHG)
+
 # Regression tests (CTest)
 add_executable(EGM2008RegressionTest tests/egm2008_regression_ctest.cpp)
 target_link_libraries(EGM2008RegressionTest SHG)

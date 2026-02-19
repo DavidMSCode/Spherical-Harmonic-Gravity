@@ -1,0 +1,12 @@
+# ninja log v5
+701	737	1771526284098917940	GravityCalc	368a1fbd7ddcd0ba
+701	737	1771526284098363299	EGM2008RegressionTest	40842409d549a2f8
+2	571	1771526283929698862	CMakeFiles/EGM2008RegressionTest.dir/tests/egm2008_regression_ctest.cpp.o	39c1e7b98c023ebc
+1	670	1771526284029473366	CMakeFiles/SHG.dir/src/SHG.cpp.o	1d4e555d8b5b44fa
+670	701	1771526284062989097	libSHG.dylib	9eecfcd9bfd238a6
+1	523	1771526283880551923	CMakeFiles/GravityCalc.dir/src/egm2008_gravity_calc.cpp.o	78c6817210560e21
+701	737	1771526284098396175	PotentialCalc	2d9d2c7d382da6aa
+2	518	1771526283877331163	CMakeFiles/PotentialCalc.dir/src/egm2008_potential_calc.cpp.o	e4aba13af71ee9dd
+7	111	1771526359041332851	build.ninja	8d920ada590e8a97
+23	829	1771526359869816435	CMakeFiles/EGM2008ProfileRunner.dir/tests/egm2008_profile_runner.cpp.o	28ddf51fd4be0a5f
+830	936	1771526359979304973	EGM2008ProfileRunner	5ae5577f840d3f71
