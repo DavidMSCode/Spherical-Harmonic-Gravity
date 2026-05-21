@@ -49,15 +49,8 @@ python setup.py install
 pip install -e .
 ```
 
-### EGM2008 Coefficients Setup
-```bash
-# Download EGM2008 coefficients from NGA (104MB)
-wget https://earth-info.nga.mil/php/download.php?file=egm-08spherical
-# Or manually visit https://earth-info.nga.mil and download the EGM2008 spherical harmonics file.
-
-# Extract and place coefficients file EGM2008_to2190_TideFree in the project directory you plan to run from.
-# File format: ASCII text with degree, order, C_nm, S_nm coefficients
-```
+> Manual download of raw EGM2008 coefficient text files is no longer necessary for typical use.
+Use the Geopotential artifact bins (described below) which provide prebuilt binary coefficient files and are fetched by CMake by default. If you prefer an offline workflow, point CMake at a local tarball with `-DSHG_GEOPOTENTIAL_ARTIFACT_ARCHIVE=/path/to/geopotential_bins.tar.gz`.
 
 ### Geopotential artifact bins
 The preferred C++ API is model-based and loads coefficients from the shared artifact bins.
