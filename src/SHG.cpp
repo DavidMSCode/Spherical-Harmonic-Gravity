@@ -912,8 +912,28 @@ namespace SHG
         return false;
     }
 
+    static bool can_use_artifact_egm2008_default_path()
+    {
+        try
+        {
+            const std::string dir = model_bins_directory();
+            return std::filesystem::exists(std::filesystem::path(dir) / "EGM2008.bin");
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+
     std::array<double, 3> g_EGM2008(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path)
     {
+        if (coefficient_path.empty() && can_use_artifact_egm2008_default_path())
+        {
+            const SHGModel model = get_model("EGM2008");
+            const int degree = (max_degree > EGM2008_MAX_DEGREE) ? EGM2008_MAX_DEGREE : max_degree;
+            return acceleration(model, r, phi, lambda, degree, degree);
+        }
+
         static std::vector<std::vector<double>> C_cache, S_cache;
         static bool coefficients_loaded = false;
         static std::string last_path = "";
@@ -951,6 +971,14 @@ namespace SHG
 
     std::array<double, 3> g_EGM2008_KM(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path)
     {
+        if (coefficient_path.empty() && can_use_artifact_egm2008_default_path())
+        {
+            const SHGModel model = get_model("EGM2008");
+            const int degree = (max_degree > EGM2008_MAX_DEGREE) ? EGM2008_MAX_DEGREE : max_degree;
+            const auto g_mps2 = acceleration(model, r * 1000.0, phi, lambda, degree, degree);
+            return {g_mps2[0] / 1000.0, g_mps2[1] / 1000.0, g_mps2[2] / 1000.0};
+        }
+
         static std::vector<std::vector<double>> C_cache, S_cache;
         static bool coefficients_loaded = false;
         static std::string last_path = "";
@@ -988,6 +1016,13 @@ namespace SHG
 
     double U_EGM2008(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path)
     {
+        if (coefficient_path.empty() && can_use_artifact_egm2008_default_path())
+        {
+            const SHGModel model = get_model("EGM2008");
+            const int degree = (max_degree > EGM2008_MAX_DEGREE) ? EGM2008_MAX_DEGREE : max_degree;
+            return potential(model, r, phi, lambda, degree, degree);
+        }
+
         static std::vector<std::vector<double>> C_cache, S_cache;
         static bool coefficients_loaded = false;
         static std::string last_path = "";
@@ -1025,6 +1060,13 @@ namespace SHG
 
     double U_EGM2008_KM(double r, double phi, double lambda, int max_degree, const std::string& coefficient_path)
     {
+        if (coefficient_path.empty() && can_use_artifact_egm2008_default_path())
+        {
+            const SHGModel model = get_model("EGM2008");
+            const int degree = (max_degree > EGM2008_MAX_DEGREE) ? EGM2008_MAX_DEGREE : max_degree;
+            return potential(model, r * 1000.0, phi, lambda, degree, degree) / 1000000.0;
+        }
+
         static std::vector<std::vector<double>> C_cache, S_cache;
         static bool coefficients_loaded = false;
         static std::string last_path = "";
