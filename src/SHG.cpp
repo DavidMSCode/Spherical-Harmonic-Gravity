@@ -44,10 +44,15 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <cstdint>
 #include <utility> // for std::pair
 #include <chrono>
 #include <atomic>
 #include <algorithm>
+#include <cctype>
+#include <cstdlib>
+#include <filesystem>
+#include <dlfcn.h>
 #include <unistd.h> // for getcwd
 
 #include "SHG.hpp"
@@ -57,6 +62,116 @@ namespace SHG
     // Global flag to control verbosity of coefficient loading messages
     static bool g_verbose_coefficient_loading = false;
     static std::atomic<bool> g_workspace_enabled{true};
+    static std::string g_model_bins_directory_override;
+
+    struct ModelSpec
+    {
+        const char *id;
+        const char *body;
+        int l_max;
+        int m_max;
+    };
+
+    static const ModelSpec kBuiltInModels[] = {
+        {"EGM2008", "Earth", 2190, 2190},
+        {"EGM96", "Earth", 360, 360},
+        {"GRGM1200A", "Moon", 1200, 1200},
+        {"GMM3", "Mars", 120, 120},
+    };
+
+    static std::string to_lower_copy(std::string s)
+    {
+        std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        return s;
+    }
+
+    static const ModelSpec *find_model_spec(const std::string &model_id)
+    {
+        for (const auto &spec : kBuiltInModels)
+        {
+            if (model_id == spec.id)
+                return &spec;
+        }
+        return nullptr;
+    }
+
+    static std::string resolve_model_bins_directory()
+    {
+        if (!g_model_bins_directory_override.empty())
+            return g_model_bins_directory_override;
+
+        if (const char *env_dir = std::getenv("GEOPOTENTIAL_MODEL_BINS_DIR"))
+        {
+            if (*env_dir != '\0')
+                return std::string(env_dir);
+        }
+
+        // Prefer the installed package location derived from the shared library path.
+        Dl_info info{};
+        if (dladdr(reinterpret_cast<const void*>(&g_workspace_enabled), &info) != 0 && info.dli_fname != nullptr)
+        {
+            std::filesystem::path lib_path(info.dli_fname);
+            if (!lib_path.empty())
+            {
+                const std::filesystem::path installed_bin_dir = lib_path.parent_path().parent_path() / "share" / "SHG" / "geopotential_bins" / "bin";
+                if (std::filesystem::exists(installed_bin_dir / "models.json"))
+                    return installed_bin_dir.string();
+            }
+        }
+
+        const char *candidates[] = {
+            "geopotential_bins/bin",
+            "ModelBins/bin",
+            "build/geopotential_bins/bin",
+            "../geopotential_bins/bin",
+        };
+
+        for (const auto *candidate : candidates)
+        {
+            if (std::filesystem::exists(candidate))
+                return std::string(candidate);
+        }
+
+        return "geopotential_bins/bin";
+    }
+
+    static std::string resolve_model_bin_path(const std::string &model_id)
+    {
+        return std::filesystem::path(resolve_model_bins_directory()) / (model_id + ".bin");
+    }
+
+    static void load_model_coefficients_from_flat(const std::vector<double> &flat,
+                                                  int l_max,
+                                                  int m_max,
+                                                  std::vector<std::vector<double>> &C,
+                                                  std::vector<std::vector<double>> &S)
+    {
+        const int n = (l_max + 1) * (m_max + 1);
+        C.assign(l_max + 1, std::vector<double>(m_max + 1, 0.0));
+        S.assign(l_max + 1, std::vector<double>(m_max + 1, 0.0));
+
+        for (int m = 0; m <= m_max; ++m)
+        {
+            for (int l = 0; l <= l_max; ++l)
+            {
+                const int idx = m * (l_max + 1) + l;
+                if (idx < n)
+                {
+                    C[l][m] = flat[idx];
+                    S[l][m] = flat[n + idx];
+                }
+            }
+        }
+    }
+
+    static int clamp_degree_order(int requested, int available)
+    {
+        if (requested < 0)
+            return available;
+        return std::min(requested, available);
+    }
+
+    static std::vector<SHGModel> g_model_cache;
 
     // Reads a block of coefficients from (0,0) to (l,m) from the binary file
     // Returns true if successful, false otherwise
@@ -105,6 +220,179 @@ namespace SHG
         in.close();
         return true;
     }
+
+    bool read_coefficients_mmap(const std::string& filename,
+                                int& l_max,
+                                int& m_max,
+                                std::vector<std::vector<double>>& C,
+                                std::vector<std::vector<double>>& S,
+                                double& gm,
+                                double& reference_radius)
+    {
+        std::ifstream in(filename, std::ios::binary);
+        if (!in.is_open())
+            return false;
+
+        int32_t l32 = 0;
+        int32_t m32 = 0;
+        in.read(reinterpret_cast<char*>(&l32), sizeof(int32_t));
+        if (static_cast<std::size_t>(in.gcount()) != sizeof(int32_t))
+            return false;
+        in.read(reinterpret_cast<char*>(&m32), sizeof(int32_t));
+        if (static_cast<std::size_t>(in.gcount()) != sizeof(int32_t))
+            return false;
+        in.read(reinterpret_cast<char*>(&gm), sizeof(double));
+        if (static_cast<std::size_t>(in.gcount()) != sizeof(double))
+            return false;
+        in.read(reinterpret_cast<char*>(&reference_radius), sizeof(double));
+        if (static_cast<std::size_t>(in.gcount()) != sizeof(double))
+            return false;
+
+        l_max = static_cast<int>(l32);
+        m_max = static_cast<int>(m32);
+        if (l_max < 0 || m_max < 0)
+            return false;
+
+        const std::size_t n = static_cast<std::size_t>(l_max + 1) * static_cast<std::size_t>(m_max + 1);
+        std::vector<double> flat(2 * n, 0.0);
+        in.read(reinterpret_cast<char*>(flat.data()), static_cast<std::streamsize>(flat.size() * sizeof(double)));
+        if (static_cast<std::size_t>(in.gcount()) != flat.size() * sizeof(double))
+            return false;
+
+        load_model_coefficients_from_flat(flat, l_max, m_max, C, S);
+        return true;
+    }
+
+    void set_model_bins_directory(const std::string& directory)
+    {
+        g_model_bins_directory_override = directory;
+    }
+
+    std::string model_bins_directory()
+    {
+        return resolve_model_bins_directory();
+    }
+
+    std::vector<std::string> available_model_ids()
+    {
+        std::vector<std::string> ids;
+        ids.reserve(sizeof(kBuiltInModels) / sizeof(kBuiltInModels[0]));
+        for (const auto &spec : kBuiltInModels)
+            ids.emplace_back(spec.id);
+        return ids;
+    }
+
+    SHGModel get_model(const std::string& model_id, bool cache)
+    {
+        if (cache)
+        {
+            for (const auto &cached : g_model_cache)
+            {
+                if (cached.id == model_id)
+                    return cached;
+            }
+        }
+
+        const ModelSpec *spec = find_model_spec(model_id);
+        if (!spec)
+            throw std::runtime_error("Unknown geopotential model id: " + model_id);
+
+        const std::string bin_path = resolve_model_bin_path(model_id);
+        int l_max = 0;
+        int m_max = 0;
+        std::vector<std::vector<double>> C, S;
+        double gm = 0.0;
+        double ref_rad = 0.0;
+
+        if (!read_coefficients_mmap(bin_path, l_max, m_max, C, S, gm, ref_rad))
+            throw std::runtime_error("Failed to load geopotential bin for model '" + model_id + "' from: " + bin_path);
+
+        SHGModel model;
+        model.id = model_id;
+        model.body = spec->body;
+        model.l_max = l_max;
+        model.m_max = m_max;
+        model.C = std::move(C);
+        model.S = std::move(S);
+        model.gm = gm;
+        model.reference_radius = ref_rad;
+
+        if (cache)
+        {
+            for (auto &cached : g_model_cache)
+            {
+                if (cached.id == model_id)
+                {
+                    cached = model;
+                    return model;
+                }
+            }
+            g_model_cache.push_back(model);
+        }
+
+        return model;
+    }
+
+    std::string default_model_for_body(const std::string& body)
+    {
+        const std::string body_lower = to_lower_copy(body);
+        const ModelSpec *best = nullptr;
+        for (const auto &spec : kBuiltInModels)
+        {
+            if (body_lower == to_lower_copy(spec.body))
+            {
+                if (!best || spec.l_max > best->l_max)
+                    best = &spec;
+            }
+        }
+
+        if (!best)
+            throw std::runtime_error("No geopotential models found for body: " + body);
+
+        return best->id;
+    }
+
+    void print_models_summary()
+    {
+        std::cout << "Available models:" << std::endl;
+        std::string current_body;
+        for (const auto &spec : kBuiltInModels)
+        {
+            if (current_body != spec.body)
+            {
+                current_body = spec.body;
+                std::cout << std::endl << current_body << " Models:" << std::endl;
+            }
+            std::cout << "- " << spec.id << " (degree/order " << spec.l_max << ")" << std::endl;
+        }
+    }
+
+    double potential(const SHGModel& model, double r, double phi, double lambda, int l_max, int m_max)
+    {
+        const int degree = clamp_degree_order(l_max, model.l_max);
+        const int order = clamp_degree_order(m_max, model.m_max);
+        return pot(r, phi, lambda, degree, order, model.C, model.S, model.reference_radius, model.gm);
+    }
+
+    std::array<double, 3> acceleration(const SHGModel& model, double r, double phi, double lambda, int l_max, int m_max)
+    {
+        const int degree = clamp_degree_order(l_max, model.l_max);
+        const int order = clamp_degree_order(m_max, model.m_max);
+        return g<std::array<double, 3>>(r, phi, lambda, degree, order, model.C, model.S, model.reference_radius, model.gm);
+    }
+
+    double potential(const std::string& model_id, double r, double phi, double lambda, int l_max, int m_max, bool cache)
+    {
+        SHGModel model = get_model(model_id, cache);
+        return potential(model, r, phi, lambda, l_max, m_max);
+    }
+
+    std::array<double, 3> acceleration(const std::string& model_id, double r, double phi, double lambda, int l_max, int m_max, bool cache)
+    {
+        SHGModel model = get_model(model_id, cache);
+        return acceleration(model, r, phi, lambda, l_max, m_max);
+    }
+
     // Reads only the C and S coefficients for a specific (l, m) from the binary file
     // Returns true if successful, false otherwise
     bool read_coefficient_binary(const std::string &filename, int l, int m, double &C_val, double &S_val)

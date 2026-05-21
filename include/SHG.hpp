@@ -18,6 +18,7 @@
 #ifndef SHG_HPP
 #define SHG_HPP
 
+#include <array>
 #include <vector>
 #include <string>
 #include <utility> // for std::pair
@@ -40,6 +41,113 @@ namespace SHG {
     constexpr double EGM2008_GM_KM = 3.986004415e5; // EGM2008 gravitational parameter in km³/s²
     constexpr int EGM2008_MAX_DEGREE = 2190;        // EGM2008 maximum degree
     constexpr int EGM2008_MAX_ORDER = 2190;         // EGM2008 maximum order
+
+    /**
+     * @brief Model metadata and coefficient bundle loaded from a geopotential artifact bin.
+     *
+     */
+    struct SHGModel {
+        std::string id;
+        std::string body;
+        int l_max{};
+        int m_max{};
+        std::vector<std::vector<double>> C;
+        std::vector<std::vector<double>> S;
+        double gm{};
+        double reference_radius{};
+        std::string distance_unit{"m"};
+        std::string time_unit{"s"};
+    };
+
+    /**
+     * @brief Override the directory that contains geopotential artifact bins.
+     *
+     * The directory should contain files such as `EGM2008.bin`, `models.json`,
+     * and `<model>_metadata.json` if you are using the geopotential-data release.
+     */
+    void set_model_bins_directory(const std::string& directory);
+
+    /**
+     * @brief Return the currently configured geopotential artifact directory.
+     */
+    std::string model_bins_directory();
+
+    /**
+     * @brief Read a geopotential artifact binary file.
+     *
+     * Binary layout:
+     * [Int32 l_max][Int32 m_max][Float64 GM][Float64 reference_radius]
+     * followed by C and S coefficients in column-major order.
+     */
+    bool read_coefficients_mmap(const std::string& filename,
+                                int& l_max,
+                                int& m_max,
+                                std::vector<std::vector<double>>& C,
+                                std::vector<std::vector<double>>& S,
+                                double& gm,
+                                double& reference_radius);
+
+    /**
+     * @brief Return the list of supported model identifiers from the built-in registry.
+     */
+    std::vector<std::string> available_model_ids();
+
+    /**
+     * @brief Load a model by id from the configured geopotential artifact directory.
+     */
+    SHGModel get_model(const std::string& model_id, bool cache = true);
+
+    /**
+     * @brief Return the highest-resolution model id for a given body name.
+     */
+    std::string default_model_for_body(const std::string& body);
+
+    /**
+     * @brief Print a summary of supported models.
+     */
+    void print_models_summary();
+
+    /**
+     * @brief Compute gravitational potential from a loaded model.
+     */
+    double potential(const SHGModel& model,
+                     double r,
+                     double phi,
+                     double lambda,
+                     int l_max = -1,
+                     int m_max = -1);
+
+    /**
+     * @brief Compute gravitational acceleration from a loaded model.
+     */
+    std::array<double, 3> acceleration(const SHGModel& model,
+                                       double r,
+                                       double phi,
+                                       double lambda,
+                                       int l_max = -1,
+                                       int m_max = -1);
+
+    /**
+     * @brief Compute gravitational potential by model id.
+     */
+    double potential(const std::string& model_id,
+                     double r,
+                     double phi,
+                     double lambda,
+                     int l_max = -1,
+                     int m_max = -1,
+                     bool cache = true);
+
+    /**
+     * @brief Compute gravitational acceleration by model id.
+     */
+    std::array<double, 3> acceleration(const std::string& model_id,
+                                       double r,
+                                       double phi,
+                                       double lambda,
+                                       int l_max = -1,
+                                       int m_max = -1,
+                                       bool cache = true);
     
     /**
      * @brief Reads a block (starting from 0,0) of spherical harmonic coefficients from a binary file.
