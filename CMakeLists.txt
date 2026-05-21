@@ -11,9 +11,10 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 # Geopotential artifact bins (shared with Geopotential.jl)
-option(SHG_DOWNLOAD_GEOPOTENTIAL_ARTIFACTS "Download geopotential artifact bins during build" OFF)
+option(SHG_DOWNLOAD_GEOPOTENTIAL_ARTIFACTS "Download geopotential artifact bins during build" ON)
 option(SHG_INSTALL_GEOPOTENTIAL_ARTIFACTS "Install geopotential artifact bins with SHG" ON)
 set(SHG_GEOPOTENTIAL_ARTIFACT_URL "https://github.com/DavidMSCode/geopotential-data/releases/download/v1.0.0/geopotential_bins.tar.gz" CACHE STRING "URL for the geopotential artifact tarball")
+set(SHG_GEOPOTENTIAL_ARTIFACT_ARCHIVE "" CACHE FILEPATH "Optional local geopotential artifact tarball to use instead of downloading")
 set(SHG_GEOPOTENTIAL_ARTIFACTS_DIR "${CMAKE_BINARY_DIR}/geopotential_bins" CACHE PATH "Directory where geopotential artifact bins are stored")
 set(SHG_GEOPOTENTIAL_ARTIFACTS_BIN_DIR "${SHG_GEOPOTENTIAL_ARTIFACTS_DIR}/bin" CACHE PATH "Directory containing extracted geopotential model bins")
 set(SHG_GEOPOTENTIAL_ARTIFACTS_STAMP "${SHG_GEOPOTENTIAL_ARTIFACTS_DIR}/.download_complete")
@@ -23,6 +24,7 @@ add_custom_command(
 	OUTPUT "${SHG_GEOPOTENTIAL_ARTIFACTS_STAMP}"
 	COMMAND ${CMAKE_COMMAND}
 			-DSHG_GEOPOTENTIAL_ARTIFACT_URL=${SHG_GEOPOTENTIAL_ARTIFACT_URL}
+			-DSHG_GEOPOTENTIAL_ARTIFACT_ARCHIVE=${SHG_GEOPOTENTIAL_ARTIFACT_ARCHIVE}
 			-DSHG_GEOPOTENTIAL_ARTIFACTS_DIR=${SHG_GEOPOTENTIAL_ARTIFACTS_DIR}
 			-P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/DownloadGeopotentialArtifacts.cmake
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/DownloadGeopotentialArtifacts.cmake

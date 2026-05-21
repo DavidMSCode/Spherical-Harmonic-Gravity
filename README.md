@@ -60,36 +60,50 @@ wget https://earth-info.nga.mil/php/download.php?file=egm-08spherical
 ```
 
 ### Geopotential artifact bins
-
-If you want the same multi-model workflow used by `Geopotential.jl`, download the
-prebuilt bins from the `geopotential-data` release and point the C++ library at
-the extracted `bin/` directory.
-
+The preferred C++ API is model-based and loads coefficients from the shared artifact bins.
 Supported model IDs in the shared artifact release:
 - `EGM2008`
 - `EGM96`
 - `GRGM1200A`
 - `GMM3`
 
-The library now provides a model-based API:
+The default functions for potential and acceleration take a model object as the first argument, and the library provides helpers to get models by ID or body name. For example:
 - `SHG::get_model("EGM2008")`
 - `SHG::default_model_for_body("Earth")`
+- `SHG::potential("EGM2008", r, phi, lambda)`
+- `SHG::acceleration("EGM2008", r, phi, lambda)`
 - `SHG::potential(model, r, phi, lambda)`
 - `SHG::acceleration(model, r, phi, lambda)`
+
+Example:
+```cpp
+#include <array>
+
+SHG::SHGModel model = SHG::get_model(SHG::default_model_for_body("Earth"));
+double U = SHG::potential(model, r, phi, lambda);
+std::array<double, 3> g = SHG::acceleration(model, r, phi, lambda);
+```
 
 You can set the artifact location with `SHG::set_model_bins_directory(...)`, or
 by setting `GEOPOTENTIAL_MODEL_BINS_DIR` before running your program.
 
-If you want CMake to fetch the bins for you, build the `download_geopotential_artifacts`
-target, or configure with `-DSHG_DOWNLOAD_GEOPOTENTIAL_ARTIFACTS=ON` so the main
-library target depends on the download step.
+By default, CMake fetches the bins during the build so the library and tests can
+use them immediately. If you need an offline workflow, point CMake at a local
+tarball with `-DSHG_GEOPOTENTIAL_ARTIFACT_ARCHIVE=/path/to/geopotential_bins.tar.gz`
+and it will unpack that instead of trying to download them.
 
-### Basic Usage
+If you want to suppress automatic fetching entirely, disable it with
+`-DSHG_DOWNLOAD_GEOPOTENTIAL_ARTIFACTS=OFF` and build the
+`download_geopotential_artifacts` target only when you want to populate the cache.
+
+### Compatibility / legacy usage
 ```python
 # Compute gravitational acceleration at a point
 import pyshg
 r, phi, lam = 6371000, 0.5, 1.0  # radius (m), geocentric latitude (rad), longitude (rad)
 g_vector = pyshg.g_EGM2008(r, phi, lam, max_degree=360)
+
+# The direct coefficient-path workflow remains available for existing scripts.
 
 # Run demonstration examples
 python examples/earth_gravity_visualization.py

@@ -65,16 +65,16 @@ int main() {
     }
 
     int failures = 0;
-    for (const auto& tc : cases) {
+    for (const Case& tc : cases) {
         const double phi = deg2rad(tc.phi_deg);
         const double lambda = deg2rad(tc.lambda_deg);
         const int degree = std::min(tc.degree, model.l_max);
         const int order = std::min(tc.degree, model.m_max);
 
-        const auto g_model = SHG::acceleration(model, tc.r_m, phi, lambda, degree, order);
+        const std::array<double, 3> g_model = SHG::acceleration(model, tc.r_m, phi, lambda, degree, order);
         const double u_model = SHG::potential(model, tc.r_m, phi, lambda, degree, order);
 
-        const auto g_explicit = SHG::g_EGM2008(tc.r_m, phi, lambda, tc.degree);
+        const std::array<double, 3> g_explicit = SHG::g_EGM2008(tc.r_m, phi, lambda, tc.degree);
         const double u_explicit = SHG::U_EGM2008(tc.r_m, phi, lambda, tc.degree);
 
         const double g_model_mag = norm3(g_model);
