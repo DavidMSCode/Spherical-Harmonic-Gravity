@@ -97,6 +97,10 @@ The programs require EGM2008 coefficient files:
 
 Download from: https://earth-info.nga.mil/php/download.php?file=egm-08spherical
 
+For the shared multi-model artifact bins used by `Geopotential.jl`, build the
+`download_geopotential_artifacts` CMake target or configure with
+`-DSHG_DOWNLOAD_GEOPOTENTIAL_ARTIFACTS=ON`.
+
 ## Coordinate System
 
 Both calculators use **geocentric coordinates**:

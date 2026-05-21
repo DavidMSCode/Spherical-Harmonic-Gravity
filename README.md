@@ -59,6 +59,31 @@ wget https://earth-info.nga.mil/php/download.php?file=egm-08spherical
 # File format: ASCII text with degree, order, C_nm, S_nm coefficients
 ```
 
+### Geopotential artifact bins
+
+If you want the same multi-model workflow used by `Geopotential.jl`, download the
+prebuilt bins from the `geopotential-data` release and point the C++ library at
+the extracted `bin/` directory.
+
+Supported model IDs in the shared artifact release:
+- `EGM2008`
+- `EGM96`
+- `GRGM1200A`
+- `GMM3`
+
+The library now provides a model-based API:
+- `SHG::get_model("EGM2008")`
+- `SHG::default_model_for_body("Earth")`
+- `SHG::potential(model, r, phi, lambda)`
+- `SHG::acceleration(model, r, phi, lambda)`
+
+You can set the artifact location with `SHG::set_model_bins_directory(...)`, or
+by setting `GEOPOTENTIAL_MODEL_BINS_DIR` before running your program.
+
+If you want CMake to fetch the bins for you, build the `download_geopotential_artifacts`
+target, or configure with `-DSHG_DOWNLOAD_GEOPOTENTIAL_ARTIFACTS=ON` so the main
+library target depends on the download step.
+
 ### Basic Usage
 ```python
 # Compute gravitational acceleration at a point
