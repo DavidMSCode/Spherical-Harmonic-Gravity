@@ -29,6 +29,7 @@ CMakeFiles/
 cmake_install.cmake
 Makefile
 *.cmake
+!cmake/DownloadGeopotentialArtifacts.cmake
 !CMakeLists.txt
 
 # IDE and editor files
