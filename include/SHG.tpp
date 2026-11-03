@@ -80,7 +80,7 @@ T g(double r, double phi, double lambda, int l_max, int m_max, const std::vector
         double cos_phi = cos(phi);
         double aI, aJ, aK;
 
-        if (abs(cos_phi) < pole_tolerance) {
+        if (std::abs(cos_phi) < pole_tolerance) {
             double sign_phi = (phi > 0) ? 1.0 : -1.0;
             aI = -sign_phi * dudlambda / r * sin(lambda);
             aJ = sign_phi * dudlambda / r * cos(lambda);
@@ -159,7 +159,7 @@ T g(double r, double phi, double lambda, int l_max, int m_max, const std::vector
     double cos_phi = cos(phi);
     double aI, aJ, aK;
     
-    if (abs(cos_phi) < pole_tolerance) {
+    if (std::abs(cos_phi) < pole_tolerance) {
         // At the poles: use L'Hôpital's rule and limiting behavior
         // The horizontal accelerations at poles are determined by the gradient in the tangent plane
         // For spherical harmonics, this involves derivatives of Legendre polynomials
